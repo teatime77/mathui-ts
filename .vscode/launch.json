@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Local",
+            "type": "chrome",
+            "request": "launch",
+            // 読み込むHTMLファイルを指定
+            "file": "${workspaceRoot}/index.html",
+            "trace" :true,
+            "sourceMaps": true,
+            "runtimeArgs": [
+                "--allow-file-access-from-files"
+            ]
+        }
+    ]
+}
