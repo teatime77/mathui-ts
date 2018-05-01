@@ -3,69 +3,69 @@
 <head>
     <meta charset="utf-8">
     <title>数式処理</title>
-    <script type="text/x-mathjax-config">
-        MathJax.Hub.Config({
-          extensions: ["tex2jax.js"],
-          jax: ["input/TeX","output/HTML-CSS"],
-          tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
-        });
-    </script>
-    <script type="text/javascript"
-        src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
-    </script>      
+    <script type="text/javascript" src="./src/main.js"></script>
     <script type="text/javascript">
-    function InputMath(){
+    function BodyOnLoad(){
         var math_txt = document.getElementById("math-txt")
 
         var lex = new Lex();
         var token_list = lex.LexicalAnalysis(math_txt.value);
 
         var parser = new Parser();
-        parser.parse(token_list);
+        var root = parser.parse(token_list);
 
-        var inp_txt = document.getElementById("inp-txt")
-        var out_div = document.getElementById("out-math")
-        out_div.innerText = "$$\r\n" + inp_txt.value + "\r\n$$";
+        var svg_1 = document.getElementById("svg-1");
+
+        var x = 5;
+        var y = 30;
+        for(let font_family of [ "STIX2-Math", "STIX2-Bold", "STIX2-BoldItalic", "STIX2-Italic", "STIX2-Regular" ]){
+
+            var txt = new TextUI(null, "abcdefghijklmnopqrstuvwxyzΣ", svg_1, 12, font_family)
+            var w = txt.width;
+            txt.setXY(x, y);
+
+            txt = new TextUI(null, "∫\u222B∬∭∞√∛∜\u221A\u221B\u221C", svg_1, 16, font_family)
+            txt.setXY(x + w + 0.5, y);
+
+            x += 10;
+            y += txt.height;
+        }
     }
 
-    function MakeMath(){
-        MathJax.Hub.Queue(["Typeset", MathJax.Hub, "out-math"]);
-    }
     </script>    
+
+    <style type="text/css">
+    @font-face {
+        font-family: 'STIX2-Math';
+        src: url('./font/STIX2Math.woff2') format('woff2');
+    }
+    @font-face {
+        font-family: 'STIX2-Bold';
+        src: url('./font/STIX2Text-Bold.woff2') format('woff2');
+    }
+    @font-face {
+        font-family: 'STIX2-BoldItalic';
+        src: url('./font/STIX2Text-BoldItalic.woff2') format('woff2');
+    }
+    @font-face {
+        font-family: 'STIX2-Italic';
+        src: url('./font/STIX2Text-Italic.woff2') format('woff2');
+    }
+    @font-face {
+        font-family: 'STIX2-Regular';
+        src: url('./font/STIX2Text-Regular.woff2') format('woff2');
+    }
+    </style>    
+
 </head>
-<body>
+<body onload="BodyOnLoad()">
 
-    <!-- javascriptの読み込み -->
-    <script src="https://www.promisejs.org/polyfills/promise-7.0.4.min.js"></script>
-
-    <script data-main="./src/main" src="require.js"></script>
-    <!-- 
-    <script src="./src/main.js" ></script>
-
-        δu_{i} = δy_{i} \cdot σ'(u_{i})
-
-    -->
+    <svg id="svg-1" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="500" height="200">
+    </svg>
+    
     <textarea cols="50" rows="5" id="math-txt">
         var a : int;
         a + b * 2;
-    </textarea>
-    <textarea cols="50" rows="5" id="inp-txt">
-            δu_{i} = δy_{i} \cdot σ'(u_{i})
-    </textarea>
-    <br/>
-    <input type="button" value="日本語" onclick="InputMath()"/>
-    <input type="button" value="変換" onclick="MakeMath()"/>
-    <div id="out-math"></div>
-
-    $$
-    δu_{i} = δy_{i} \cdot σ'(u_{i})
-    \\
-    δx_{i_j} = \displaystyle \sum_{i }^{ Y } δu_{i} \cdot w_{i}^{j}
-    \\
-    δw_{i}^{j} = δu_{i} \cdot x_{i_j}
-    \\
-    δb_{i} = δu_{i}
-    $$
-    
+    </textarea>    
 </body>
 </html>

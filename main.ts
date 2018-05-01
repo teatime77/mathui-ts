@@ -1,4 +1,3 @@
-//import Hello = require("./mod");
 
 class Hello
 {
