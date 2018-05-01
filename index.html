@@ -12,22 +12,28 @@
         var token_list = lex.lexicalAnalysis(math_txt.value);
 
         var parser = new Parser();
-        var root = parser.parse(token_list);
+        var stmt_list = parser.parse(token_list);
 
         var svg_1 = document.getElementById("svg-1");
+        var ctx = new ContextUI(svg_1);
+        ctx.makeUI(stmt_list);
+        ctx.draw();
 
-        var x = 5;
+        var svg_2 = document.getElementById("svg-2");
+
         var y = 30;
         for(let font_family of [ "STIX2-Math", "STIX2-Bold", "STIX2-BoldItalic", "STIX2-Italic", "STIX2-Regular" ]){
+            var x = 5;
+            for(let s of [ "a", "+", "p", "⋅", "2", "cdefghijklmnopqrstuvwxyzΣ", "∫\u222B∬∭∞√∛∜\u221A\u221B\u221C" ]){
 
-            var txt = new TextUI(null, "abcdefghijklmnopqrstuvwxyzΣ", svg_1, 12, font_family)
-            var w = txt.width;
-            txt.setXY(x, y);
+                var txt = new TextUI(null, s, svg_2, 12, font_family)
+                var w = txt.width;
+                txt.setXY(x, y);
+                txt.draw(0, 0);
 
-            txt = new TextUI(null, "∫\u222B∬∭∞√∛∜\u221A\u221B\u221C", svg_1, 16, font_family)
-            txt.setXY(x + w + 0.5, y);
+                x += w + 1;
+            }
 
-            x += 10;
             y += txt.height;
         }
     }
@@ -60,12 +66,12 @@
 </head>
 <body onload="BodyOnLoad()">
 
-    <svg id="svg-1" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="500" height="200">
-    </svg>
+    <svg id="svg-1" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="500" height="100" />
+    <svg id="svg-2" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="500" height="200" />
     
     <textarea cols="50" rows="5" id="math-txt">
         var a : int;
-        a + b * 2;
+        a + p * 2;
     </textarea>    
 </body>
 </html>

@@ -377,18 +377,20 @@ class Parser {
         }
     }
 
-    parse(token_list:Token[]){
+    parse(token_list:Token[]) : Statement[]{
         this.tokenList = token_list;
         this.tokenPos = 0;
         this.currentToken = token_list[0];
         this.nextToken = token_list[1];
 
         var pred : Predicate = new Predicate();
+        var stmt_list = new Array<Statement>();
         for(;;){
             var stmt = this.readStatement();
             if(stmt == null){
-                break;
+                return stmt_list;
             }
+            stmt_list.push(stmt);
         }
     }
 }

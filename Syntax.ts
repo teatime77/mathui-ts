@@ -22,6 +22,19 @@ class Variable {
             this.domain.parent = this;
         }
     }
+
+    makeUI(ctx : ContextUI) : ElementUI{
+        var blc = new HorizontalBlock(this);
+
+        blc.add( ctx.makeText(this, this.name) );
+        blc.add( ctx.makeText(this, "∈") );
+        
+        blc.add( this.typeVar.makeUI(ctx) );
+
+        blc.layout();
+
+        return blc;
+    }
 }
 
 /*
@@ -48,6 +61,10 @@ class Class {
     constructor(name : string){
         this.name = name;
     }
+
+    makeUI(ctx : ContextUI) : ElementUI {
+        return ctx.makeText(this, this.name);
+    }
 }
 
 var IntClass : Class = new Class("int");
@@ -70,7 +87,13 @@ class ArrayType extends Class {
     }
 }
 
-class Term {
+class Statement {
+    makeUI(ctx : ContextUI) : ElementUI{
+        return null;
+    }
+}
+
+class Term extends Statement {
     // 親
     parent : object;
 
@@ -85,8 +108,11 @@ class Term {
     数値定数
 */
 class Constant extends Term {
+    text : string;
     constructor(text : string, sub_type : TokenSubType) {
         super();
+
+        this.text = text;
 
         switch (sub_type) {
         case TokenSubType.integer:
@@ -100,6 +126,10 @@ class Constant extends Term {
             this.typeTerm = RealClass;
             break;
         }
+    }
+
+    makeUI(ctx : ContextUI) : ElementUI {
+        return ctx.makeText(this, this.text);
     }
 }
 
@@ -126,9 +156,12 @@ class Reference extends Term {
         }
     }
 
-
     static FromVariable(v : Variable) {
         return new Reference(v.name, v, null);
+    }
+
+    makeUI(ctx : ContextUI) : ElementUI {
+        return ctx.makeText(this, this.name);
     }
 }
 
@@ -142,7 +175,6 @@ class Apply extends Term {
     // 引数
     args : Term[];
 
-
     constructor(fnc : Reference, args : Term[]) {
         super();
         this.functionApp = fnc;
@@ -153,16 +185,56 @@ class Apply extends Term {
             t.parent = this;
         }
     }
-}
 
-class Relation {
+    makeUI(ctx : ContextUI) : ElementUI{
+        var blc = new HorizontalBlock(this)
+
+        var op: string;
+        if(this.functionApp.name == "*"){
+            op = "⋅";
+        }
+        else{
+            op = this.functionApp.name;
+        }
+        for(let arg of this.args){
+            if(arg != this.args[0]){
+                // 最初でない場合
+
+                blc.add( ctx.makeText(this, op) );
+            }
+
+            blc.add( arg.makeUI(ctx) );
+        }
+
+        blc.layout();
+
+        return blc;
+    }
 }
 
 /*
     変数宣言文
 */
-class VariableDeclaration extends Relation {
+class VariableDeclaration extends Statement {
     variables : Variable[] = new Array<Variable>();
+
+    makeUI(ctx : ContextUI){
+        var blc = new HorizontalBlock(this)
+
+        for(let va of this.variables){
+            if(va != this.variables[0]){
+                // 最初でない場合
+
+                blc.add( ctx.makeText(this, ",") );
+            }
+
+            blc.add( va.makeUI(ctx) );
+        }
+
+        blc.layout();
+
+        return blc;
+    }
 }
 
 class Predicate {
