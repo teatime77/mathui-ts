@@ -3,47 +3,47 @@ class SyntaxException extends Error {
 }
 
 class Parser {
-    TokenPos:number = 0;
-    NextToken:Token = null;
-    CurrentToken:Token = null;
+    tokenPos:number = 0;
+    nextToken:Token = null;
+    currentToken:Token = null;
 
-    TokenList : Token[];
-    EOTToken : Token = new Token(TokenType.EOT, TokenSubType.Unknown, null, -1, -1);
+    tokenList : Token[];
+    eotToken : Token = new Token(TokenType.EOT, TokenSubType.Unknown, null, -1, -1);
 
-    SimpleTypes : Class[] = new Array<Class>();
-    ArrayTypes : ArrayType[] = new Array<ArrayType>();
+    simpleTypes : Class[] = new Array<Class>();
+    arrayTypes : ArrayType[] = new Array<ArrayType>();
 
     constructor(){
-        this.SimpleTypes.push(IntClass);
-        this.SimpleTypes.push(RealClass);
+        this.simpleTypes.push(IntClass);
+        this.simpleTypes.push(RealClass);
     }
 
     GetCurrentToken() : Token {
-        return this.CurrentToken;
+        return this.currentToken;
     }
 
      ReadNextToken(): Token{
-        var  current_token:Token = this.CurrentToken;
+        var  current_token:Token = this.currentToken;
 
-        this.CurrentToken = this.NextToken;
+        this.currentToken = this.nextToken;
 
         // トークンの位置を1つ進めます。
-        this.TokenPos++;
+        this.tokenPos++;
 
-        if (this.TokenPos + 1 < this.TokenList.length) {
+        if (this.tokenPos + 1 < this.tokenList.length) {
 
-            this.NextToken = this.TokenList[this.TokenPos + 1];
+            this.nextToken = this.tokenList[this.tokenPos + 1];
         }
         else{
 
-            this.NextToken = this.EOTToken;
+            this.nextToken = this.eotToken;
         }
 
         return current_token;
     }
 
      GetToken( text:string):Token {
-        if(this.CurrentToken.Text != text) {
+        if(this.currentToken.text != text) {
 
             throw new SyntaxException();
         }
@@ -52,7 +52,7 @@ class Parser {
     }
 
      GetTokenT( type:TokenType):Token {
-        if (type != TokenType.Any && type != this.CurrentToken.TypeTkn) {
+        if (type != TokenType.Any && type != this.currentToken.typeTkn) {
 
             throw new SyntaxException();
         }
@@ -61,20 +61,20 @@ class Parser {
     }
 
     GetSimpleType(name : string) : Class{
-        var v = this.SimpleTypes.filter(x => x.Name == name);
+        var v = this.simpleTypes.filter(x => x.name == name);
         console.assert(0 < v.length);
         return v[0];
     }
 
     GetArrayType(element_type : Class, dim_cnt : number) : ArrayType {
-        var v = this.ArrayTypes.filter(c => c.ElementType == element_type && c.DimCnt == dim_cnt);
+        var v = this.arrayTypes.filter(c => c.elementType == element_type && c.dimCnt == dim_cnt);
         if (0 < v.length){
 
             return v[0];
         }
 
         var type : ArrayType = new ArrayType(element_type, dim_cnt);
-        this.ArrayTypes.push(type);
+        this.arrayTypes.push(type);
 
         return type;
     }
@@ -85,10 +85,10 @@ class Parser {
     ReadType() : Class{
         var type_id : Token = this.GetTokenT(TokenType.Identifier);
 
-        if (this.CurrentToken.Text != "[") {
+        if (this.currentToken.text != "[") {
             // 配列でない場合
 
-            return this.GetSimpleType(type_id.Text);
+            return this.GetSimpleType(type_id.text);
         }
         else { 
             // 配列の場合
@@ -97,15 +97,15 @@ class Parser {
 
             var dim_cnt : number = 1;
 
-            this.CurrentToken = this.GetCurrentToken(); // TS2365: Operator '==' cannot be applied to types '"["' and '"]"'.
-            while (this.CurrentToken.Text == ",") {
+            this.currentToken = this.GetCurrentToken(); // TS2365: Operator '==' cannot be applied to types '"["' and '"]"'.
+            while (this.currentToken.text == ",") {
                 dim_cnt++;
                 this.GetToken(",");
             }
 
             this.GetToken("]");
 
-            var element_type : Class = this.GetSimpleType(type_id.Text);
+            var element_type : Class = this.GetSimpleType(type_id.text);
 
             return this.GetArrayType(element_type, dim_cnt);
         }
@@ -124,7 +124,7 @@ class Parser {
         var type : Class = this.ReadType();
 
         // 変数を返します。
-        return new Variable(id.Text, type, null);
+        return new Variable(id.text, type, null);
     }
 
     /*
@@ -133,11 +133,11 @@ class Parser {
     ReadReference() : Reference {
         var id : Token = this.GetTokenT(TokenType.Identifier);
 
-        if(this.CurrentToken.Text != "[") {
+        if(this.currentToken.text != "[") {
             // 配列でない場合
 
             // 変数参照を返します。
-            return new Reference(id.Text, null, null);
+            return new Reference(id.text, null, null);
         }
         else {
             // 配列の場合
@@ -151,8 +151,8 @@ class Parser {
 
                 idxes.push(idx);
 
-                this.CurrentToken = this.GetCurrentToken(); // TS2365: Operator '==' cannot be applied to types '"["' and '"]"'.
-                if (this.CurrentToken.Text == "]") {
+                this.currentToken = this.GetCurrentToken(); // TS2365: Operator '==' cannot be applied to types '"["' and '"]"'.
+                if (this.currentToken.text == "]") {
                     break;
                 }
                 this.GetToken(",");
@@ -160,7 +160,7 @@ class Parser {
             this.GetToken("]");
 
             // 配列の変数参照を返します。
-            return new Reference(id.Text, null, idxes);
+            return new Reference(id.text, null, idxes);
         }
     }
 
@@ -171,13 +171,13 @@ class Parser {
         var terms : Term[] = new Array<Term>();
         this.GetToken("(");
 
-        if (this.CurrentToken.Text != ")") {
+        if (this.currentToken.text != ")") {
 
             while (true) {
                 // 式を読みます。
                 terms.push(this.ReadExpression());
 
-                if (this.CurrentToken.Text == ")") {
+                if (this.currentToken.text == ")") {
 
                     break;
                 }
@@ -195,11 +195,11 @@ class Parser {
             基本の式を読みます。
         */
     PrimaryExpression(): Term{
-        if(this.CurrentToken.TypeTkn == TokenType.Identifier) {
+        if(this.currentToken.typeTkn == TokenType.Identifier) {
             // 変数参照を読みます。
             var r : Reference = this.ReadReference();
 
-            if(this.CurrentToken.Text != "(") {
+            if(this.currentToken.text != "(") {
 
                 // 変数参照を返します。
                 return r;
@@ -211,15 +211,15 @@ class Parser {
             // 関数適用を返します。
             return new Apply(r, args);
         }
-        else if (this.CurrentToken.TypeTkn == TokenType.Number) {
+        else if (this.currentToken.typeTkn == TokenType.Number) {
             // 数値の場合
 
             var num : Token = this.GetTokenT(TokenType.Number);
 
             // 数値を返します。
-            return new Constant(num.Text, num.SubType);
+            return new Constant(num.text, num.subType);
         }
-        else if (this.CurrentToken.Text == "(") {
+        else if (this.currentToken.text == "(") {
 
             this.GetToken("(");
 
@@ -240,7 +240,7 @@ class Parser {
             単項式を読みます。
         */
        UnaryExpression() : Term {
-        if (this.CurrentToken.Text == "-") {
+        if (this.currentToken.text == "-") {
             // 負号の場合
 
             this.GetToken("-");
@@ -249,7 +249,7 @@ class Parser {
             var t1 : Term = this.PrimaryExpression();
 
             // 符号を反転します。
-            t1.Value *= -1;
+            t1.value *= -1;
 
             return t1;
         }
@@ -267,15 +267,15 @@ class Parser {
         // 単項式を読みます。
         var t1 : Term = this.UnaryExpression();
 
-        while (this.CurrentToken.Text == "*" || this.CurrentToken.Text == "/") {
+        while (this.currentToken.text == "*" || this.currentToken.text == "/") {
 
             // 現在の演算子を保存します。
-            var opr : string = this.CurrentToken.Text;
+            var opr : string = this.currentToken.text;
 
             var args : Term[] = new Array<Term>();
             args.push(t1);
 
-            while (this.CurrentToken.Text == opr) {
+            while (this.currentToken.text == opr) {
                 // 現在のトークンが保存した演算子と同じ場合
 
                 this.GetToken(opr);
@@ -306,14 +306,14 @@ class Parser {
         // 乗算/除算の式を読みます。
         var t1 : Term = this.MultiplicativeExpression();
 
-        while (this.CurrentToken.Text == "+" || this.CurrentToken.Text == "-") {
+        while (this.currentToken.text == "+" || this.currentToken.text == "-") {
             // 現在の演算子を保存します。
-            var opr : string = this.CurrentToken.Text;
+            var opr : string = this.currentToken.text;
 
             var args : Term[] = new Array<Term>();
             args.push(t1);
 
-            while(this.CurrentToken.Text == opr) {
+            while(this.currentToken.text == opr) {
                 // 現在のトークンが保存した演算子と同じ場合
 
                 this.GetToken(opr);
@@ -328,7 +328,7 @@ class Parser {
                 // 2番目以降の項の符号を反転します。
                 for (var i : number = 1; i < args.length; i++) {
 
-                    args[i].Value *= -1;
+                    args[i].value *= -1;
                 }
             }
 
@@ -355,9 +355,9 @@ class Parser {
 
         this.GetToken("var");
 
-        while(this.CurrentToken.Text != ";"){
+        while(this.currentToken.text != ";"){
             var va = this.ReadVariable();
-            dcl.Variables.push(va);
+            dcl.variables.push(va);
         }
 
         this.GetToken(";");
@@ -366,10 +366,10 @@ class Parser {
     }
 
     ReadStatement(){
-        if(this.CurrentToken == this.EOTToken){
+        if(this.currentToken == this.eotToken){
             return null;
         }
-        else if(this.CurrentToken.Text == "var"){
+        else if(this.currentToken.text == "var"){
             return this.ReadVariableDeclaration();
         }
         else{
@@ -378,10 +378,10 @@ class Parser {
     }
 
     parse(token_list:Token[]){
-        this.TokenList = token_list;
-        this.TokenPos = 0;
-        this.CurrentToken = token_list[0];
-        this.NextToken = token_list[1];
+        this.tokenList = token_list;
+        this.tokenPos = 0;
+        this.currentToken = token_list[0];
+        this.nextToken = token_list[1];
 
         var pred : Predicate = new Predicate();
         for(;;){

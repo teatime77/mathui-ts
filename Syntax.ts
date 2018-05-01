@@ -2,24 +2,24 @@
 
 class Variable {
     // 親
-    ParentVar : object;
+    parentVar : object;
 
     // 変数名
-    Name : string;
+    name : string;
 
     // 変数の型
-    TypeVar : Class;
+    typeVar : Class;
 
     // 定義域
-    Domain : Term;
+    domain : Term;
 
     constructor(name : string, type : Class, domain : Term) {
-        this.Name = name;
-        this.TypeVar = type;
-        this.Domain = domain;
+        this.name = name;
+        this.typeVar = type;
+        this.domain = domain;
 
-        if (this.Domain != null) {
-            this.Domain.Parent = this;
+        if (this.domain != null) {
+            this.domain.parent = this;
         }
     }
 }
@@ -29,7 +29,7 @@ class Variable {
 */
 class Func extends Variable {
     // 仮引数
-    public Params : Variable[] = new Array<Variable>();
+    public params : Variable[] = new Array<Variable>();
 
     // 関数の本体
 //    public BlockStatement BodyStatement;
@@ -40,13 +40,13 @@ class Func extends Variable {
 }
 
 class Class {    
-    Name : string;
+    name : string;
 
     // 次元 (スカラーは0,  1次元配列は1,  2次元配列は2, ... )
-    DimCnt:number;
+    dimCnt:number;
 
     constructor(name : string){
-        this.Name = name;
+        this.name = name;
     }
 }
 
@@ -61,24 +61,24 @@ var DivFnc : Func = new Func("/", null)
 */
 class ArrayType extends Class {
     // 要素の型
-    ElementType:Class;
+    elementType:Class;
 
     constructor(element_type:Class, dim_cnt:number){
-        super(element_type.Name)
-        this.ElementType = element_type;
-        this.DimCnt = dim_cnt;
+        super(element_type.name)
+        this.elementType = element_type;
+        this.dimCnt = dim_cnt;
     }
 }
 
 class Term {
     // 親
-    Parent : object;
+    parent : object;
 
     // 係数
-    Value : number = 1;
+    value : number = 1;
 
     // 項の型
-    TypeTerm : Class;
+    typeTerm : Class;
 }
 
 /*
@@ -90,14 +90,14 @@ class Constant extends Term {
 
         switch (sub_type) {
         case TokenSubType.Integer:
-            this.Value = parseInt(text);
-            this.TypeTerm = IntClass;
+            this.value = parseInt(text);
+            this.typeTerm = IntClass;
             break;
 
         case TokenSubType.Float:
         case TokenSubType.Double:
-            this.Value = parseFloat(text);
-            this.TypeTerm = RealClass;
+            this.value = parseFloat(text);
+            this.typeTerm = RealClass;
             break;
         }
     }
@@ -105,30 +105,30 @@ class Constant extends Term {
 
 class Reference extends Term {
     // 変数名
-    Name : string;
+    name : string;
 
     // 参照している変数
-    VarRef : Variable;
+    varRef : Variable;
 
     // 配列の添え字
-    Indexes : Term[];
+    indexes : Term[];
 
     constructor(name : string, ref_var : Variable, idx : Term[]) {
         super();
-        this.Name = name;
-        this.VarRef = ref_var;
-        this.Indexes = idx;
+        this.name = name;
+        this.varRef = ref_var;
+        this.indexes = idx;
 
-        if (this.Indexes != null) {
-            for(let t of this.Indexes) {
-                t.Parent = this;
+        if (this.indexes != null) {
+            for(let t of this.indexes) {
+                t.parent = this;
             }
         }
     }
 
 
     static FromVariable(v : Variable) {
-        return new Reference(v.Name, v, null);
+        return new Reference(v.name, v, null);
     }
 }
 
@@ -137,20 +137,20 @@ class Reference extends Term {
 */
 class Apply extends Term {
     // 関数
-    FunctionApp : Reference;
+    functionApp : Reference;
 
     // 引数
-    Args : Term[];
+    args : Term[];
 
 
     constructor(fnc : Reference, args : Term[]) {
         super();
-        this.FunctionApp = fnc;
-        this.Args = args;
+        this.functionApp = fnc;
+        this.args = args;
 
-        this.FunctionApp.Parent = this;
-        for(let t of this.Args) {
-            t.Parent = this;
+        this.functionApp.parent = this;
+        for(let t of this.args) {
+            t.parent = this;
         }
     }
 }
@@ -162,11 +162,11 @@ class Relation {
     変数宣言文
 */
 class VariableDeclaration extends Relation {
-    Variables : Variable[] = new Array<Variable>();
+    variables : Variable[] = new Array<Variable>();
 }
 
 class Predicate {
-    Variables : Variable[] = new Array<Variable>();
-    Expression : Term;
+    variables : Variable[] = new Array<Variable>();
+    expression : Term;
 }
 

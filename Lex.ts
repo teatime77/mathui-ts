@@ -7,19 +7,19 @@ enum TokenSubType {
 }
 
 class Token{
-    TypeTkn:TokenType;
-    SubType:TokenSubType;
-    Text:string;
-    LineIndex:number;
-    CharPos:number;
+    typeTkn:TokenType;
+    subType:TokenSubType;
+    text:string;
+    lineIndex:number;
+    charPos:number;
 
     public constructor(type : TokenType, sub_type : TokenSubType, text : string, line_index : number, char_pos : number){
         console.log("" + TokenType[type] + " " + TokenSubType[sub_type] + " " + text + " " + char_pos);
-        this.TypeTkn = type;
-        this.SubType = sub_type;
-        this.Text = text;
-        this.LineIndex = line_index;
-        this.CharPos = char_pos;
+        this.typeTkn = type;
+        this.subType = sub_type;
+        this.text = text;
+        this.lineIndex = line_index;
+        this.charPos = char_pos;
     }
 }
 
