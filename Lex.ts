@@ -1,9 +1,9 @@
 
 enum TokenSubType {
-    Unknown,
-    Integer,
-    Float,
-    Double,
+    unknown,
+    integer,
+    float,
+    double,
 }
 
 class Token{
@@ -30,7 +30,7 @@ class Lex{
         /*
             字句解析をして各文字の字句型の配列を得ます。
         */
-    public LexicalAnalysis(text : string) : Array<Token> {
+    public lexicalAnalysis(text : string) : Array<Token> {
         var line_idx: number = 0;
         var token_list : Token[] = new Array<Token>();
 
@@ -46,8 +46,8 @@ class Lex{
             // 字句の開始位置
             var start_pos = pos;
 
-            var token_type = TokenType.Unknown;
-            var sub_type : TokenSubType = TokenSubType.Unknown;
+            var token_type = TokenType.unknown;
+            var sub_type : TokenSubType = TokenSubType.unknown;
             
             // 改行以外の空白をスキップします。
             for ( ; pos < text.length && text[pos] != '\r' && text[pos] != '\n' && isWhiteSpace(text[pos]); pos++);
@@ -83,7 +83,7 @@ class Lex{
                 line_top = pos;
 
                 line_idx++;
-//                token_type = TokenType.NewLine;
+//                token_type = TokenType.newLine;
                 continue;
             }
             else if (isLetter(ch1) || ch1 == '_') {
@@ -98,7 +98,7 @@ class Lex{
                 if (KeywordMap.indexOf(name) != -1) {
                     // 名前がキーワード辞書にある場合
 
-                    token_type = TokenType.ReservedWord;
+                    token_type = TokenType.reservedWord;
                 }
                 else {
                     // 名前がキーワード辞書にない場合
@@ -107,7 +107,7 @@ class Lex{
 
                         IdList.push(name);
                     }
-                    token_type = TokenType.Identifier;
+                    token_type = TokenType.identifier;
                 }
             }
             else if (isDigit(ch1)) {
@@ -129,34 +129,34 @@ class Lex{
                     if (text[pos] == 'f') {
 
                         pos++;
-                        sub_type = TokenSubType.Float;
+                        sub_type = TokenSubType.float;
                     }
                     else {
 
-                        sub_type = TokenSubType.Double;
+                        sub_type = TokenSubType.double;
                     }
                 }
                 else {
 
-                    sub_type = TokenSubType.Integer;
+                    sub_type = TokenSubType.integer;
                 }
             }
             else if (SymbolTable.indexOf("" + ch1 + ch2) != -1) {
                 // 2文字の記号の表にある場合
 
-                token_type = TokenType.Symbol;
+                token_type = TokenType.symbol;
                 pos += 2;
             }
             else if (SymbolTable.indexOf("" + ch1) != -1) {
                 // 1文字の記号の表にある場合
 
-                token_type = TokenType.Symbol;
+                token_type = TokenType.symbol;
                 pos++;
             }
             else {
                 // 不明の文字の場合
 
-                token_type = TokenType.Unknown;
+                token_type = TokenType.unknown;
                 pos++;
                 console.log("不明 {0}", text.substring(start_pos, pos), "");
 //                    throw new Exception();
@@ -168,7 +168,7 @@ class Lex{
             // トークンを作り、トークンのリストに追加します。
             token_list.push(new Token(token_type, sub_type, s, line_idx, start_pos - line_top));
 
-            if(token_type as TokenType == TokenType.Illegal) {
+            if(token_type as TokenType == TokenType.illegal) {
 
                 console.log("不正 {0} ^ {1}", text.substring(line_top, start_pos), s, "");
             }

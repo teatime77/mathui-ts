@@ -89,13 +89,13 @@ class Constant extends Term {
         super();
 
         switch (sub_type) {
-        case TokenSubType.Integer:
+        case TokenSubType.integer:
             this.value = parseInt(text);
             this.typeTerm = IntClass;
             break;
 
-        case TokenSubType.Float:
-        case TokenSubType.Double:
+        case TokenSubType.float:
+        case TokenSubType.double:
             this.value = parseFloat(text);
             this.typeTerm = RealClass;
             break;

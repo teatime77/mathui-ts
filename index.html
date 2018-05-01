@@ -9,7 +9,7 @@
         var math_txt = document.getElementById("math-txt")
 
         var lex = new Lex();
-        var token_list = lex.LexicalAnalysis(math_txt.value);
+        var token_list = lex.lexicalAnalysis(math_txt.value);
 
         var parser = new Parser();
         var root = parser.parse(token_list);

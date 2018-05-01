@@ -73,10 +73,10 @@ var SymbolTable : Array<string> = new  Array<string> (
 );
 
 enum TokenType{
-    Unknown,
+    unknown,
 
     // 識別子
-    Identifier,
+    identifier,
 
     // クラス
     Class,
@@ -85,34 +85,34 @@ enum TokenType{
     Number,
 
     // 記号
-    Symbol,
+    symbol,
 
     // 予約語
-    ReservedWord,
+    reservedWord,
 
     // End Of Text
-    EOT,
+    eot,
 
     // 指定なし
-    Any,
+    any,
 
     // 行コメント
-    LineComment,
+    lineComment,
 
     // ブロックコメント
-    BlockComment,
+    blockComment,
 
     // 改行
-    NewLine,
+    newLine,
 
     // 文字列
     String,
 
     // 文字
-    Character,
+    character,
 
     // 不正
-    Illegal
+    illegal
 }
 
 var hello:Hello = new Hello();
