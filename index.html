@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>数式処理</title>
-    <script type="text/javascript" src="./src/main.js"></script>
+    <script type="text/javascript" src="./src/main.js?ver=12"></script>
     <script type="text/javascript">
     function BodyOnLoad(){
         var math_txt = document.getElementById("math-txt")
@@ -17,24 +17,33 @@
         var svg_1 = document.getElementById("svg-1");
         var ctx = new ContextUI(svg_1);
         ctx.makeUI(stmt_list);
-        ctx.draw();
+        ctx.draw(20, 20);
 
         var svg_2 = document.getElementById("svg-2");
 
         var y = 30;
         for(let font_family of [ "STIX2-Math", "STIX2-Bold", "STIX2-BoldItalic", "STIX2-Italic", "STIX2-Regular" ]){
             var x = 5;
-            for(let s of [ "a", "+", "p", "⋅", "2", "cdefghijklmnopqrstuvwxyzΣ", "∫\u222B∬∭∞√∛∜\u221A\u221B\u221C" ]){
+            var max_h = 0;
+            for(let s of [ "a", "+", "∫", "∑", "p", "⋅", "2", "cdefghijklmnopqrstuvwxyzΣ", "∫\u222B∬∭∞√∛∜\u221A\u221B\u221C" ]){
 
-                var txt = new TextUI(null, s, svg_2, 12, font_family)
+                var font_size;
+                if(s == "∑" || s == "∫"){
+                    font_size = 24;
+                }
+                else{
+                    font_size = 16;
+                }
+                var txt = new TextUI(null, s, svg_2, font_size, font_family)
                 var w = txt.width;
                 txt.setXY(x, y);
                 txt.draw(0, 0);
 
+                max_h = Math.max(max_h, txt.height);
                 x += w + 1;
             }
 
-            y += txt.height;
+            y += max_h + 1;
         }
     }
 
@@ -71,7 +80,8 @@
     
     <textarea cols="50" rows="5" id="math-txt">
         var a : int;
-        a + p * 2;
+        a + p[i,j] * 2;
+        a + p[i,j] * 2;
     </textarea>    
 </body>
 </html>

@@ -9,6 +9,7 @@ class Vec2 {
 class ContextUI {
     svg : SVGSVGElement;
     rootUI: ElementUI;
+    ratio : number = 1;
 
     constructor(svg : SVGSVGElement){
         this.svg    = svg;
@@ -35,8 +36,8 @@ class ContextUI {
         return new TextUI(obj, str, this.svg, 16, "STIX2-Regular");
     }
 
-    draw(){
-        this.rootUI.draw(0, 0);
+    draw(x: number, y:number){
+        this.rootUI.draw(x, y);
     }
 
     sub(a: ElementUI){
@@ -61,8 +62,8 @@ class ContextUI {
 class ElementUI {
     border  : SVGRectElement;
     tag;
-    x       : number;
-    y       : number;
+    x       : number = 0;
+    y       : number = 0;
     width   : number;
     height  : number;
 
@@ -88,10 +89,6 @@ class BlockUI extends ElementUI {
     constructor(tag){
         super(tag);
     }
-    
-    addUI(ui: ElementUI){
-        this.children.push(ui);
-    }
 
     lastUI() : ElementUI {
         if(this.children.length == 0){
@@ -103,6 +100,7 @@ class BlockUI extends ElementUI {
     }
 
     add(ui: ElementUI){
+        console.assert(ui != undefined && ui != null);
         this.children.push(ui);
     }
 
@@ -125,7 +123,6 @@ class HorizontalBlock extends BlockUI {
 
     layout(){
         var x = 0;
-        var y = 0;
         var max_h = 0;
 
         for(let ui of this.children){
@@ -135,10 +132,10 @@ class HorizontalBlock extends BlockUI {
                 x += this.wordSpacing;
             }
 
-            ui.setXY(x, y);
+            ui.x = x;
 
             x += ui.width;
-            max_h = Math.max(max_h, ui.height);
+            max_h = Math.max(max_h, ui.y + ui.height);
         }
 
         this.width  = x;
@@ -182,6 +179,7 @@ class TextUI extends ElementUI {
     textSVG   : SVGTextElement;
     absX      : number = 0;
     absY      : number = 0;
+    bbox      : SVGRect;
 
     constructor(tag, text: string, svg : SVGSVGElement, font_size: number, font_family: string){
         super(tag);
@@ -192,14 +190,14 @@ class TextUI extends ElementUI {
         this.textSVG.appendChild(textNode);
         this.textSVG.setAttribute("font-family", font_family);
         this.textSVG.setAttribute("font-size", "" + font_size);
-//            this.textSVG.setAttribute("alignment-baseline", "text-before-edge");//, "before-edge");
-        this.textSVG.setAttribute("dominant-baseline", "text-before-edge");//"hanging");
+//        this.textSVG.setAttribute("alignment-baseline", "baseline");//, "text-before-edge");//, "before-edge");
+        this.textSVG.setAttribute("dominant-baseline", "mathematical");//, "text-before-edge");//"hanging");
 
         svg.appendChild(this.textSVG);
 
-        var bbox = this.textSVG.getBBox();
-        this.width = bbox.width;
-        this.height = bbox.height;
+        this.bbox = this.textSVG.getBBox();
+        this.width = this.bbox.width;
+        this.height = this.bbox.height;
 //            w = this.textSVG.getComputedTextLength();
 
         this.border = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -225,7 +223,7 @@ class TextUI extends ElementUI {
         if(this.absY != abs_y){
             this.absY   = abs_y;
             this.textSVG.setAttribute("y", "" + abs_y);
-            this.border.setAttribute("y", "" + abs_y);
+            this.border.setAttribute("y", "" + (abs_y + this.bbox.y));//- this.bbox.height 
         }
     }
 }

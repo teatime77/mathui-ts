@@ -161,7 +161,30 @@ class Reference extends Term {
     }
 
     makeUI(ctx : ContextUI) : ElementUI {
-        return ctx.makeText(this, this.name);
+        if (this.indexes == null){
+            return ctx.makeText(this, this.name);
+        }
+
+        var blc = new HorizontalBlock(this);
+
+        blc.add(ctx.makeText(this, this.name));
+
+        for(let idx of this.indexes){
+            if(idx != this.indexes[0]){
+                // 最初でない場合
+
+                var cm = ctx.makeText(this, ",");
+                cm.y = 5;
+                blc.add(cm);
+            }
+
+            var idx_ui = idx.makeUI(ctx);
+            idx_ui.y = 5;
+            blc.add(idx_ui);
+        }
+
+        blc.layout();
+        return blc;
     }
 }
 
