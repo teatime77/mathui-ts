@@ -169,19 +169,19 @@ class Reference extends Term {
 
         blc.add(ctx.makeText(this, this.name));
 
+        ctx.pushTransform(0, 5, 0.75);
         for(let idx of this.indexes){
             if(idx != this.indexes[0]){
                 // 最初でない場合
 
                 var cm = ctx.makeText(this, ",");
-                cm.y = 5;
                 blc.add(cm);
             }
 
             var idx_ui = idx.makeUI(ctx);
-            idx_ui.y = 5;
             blc.add(idx_ui);
         }
+        ctx.popTransform();
 
         blc.layout();
         return blc;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>数式処理</title>
-    <script type="text/javascript" src="./src/main.js?ver=12"></script>
+    <script type="text/javascript" src="./src/main.js?ver=32"></script>
     <script type="text/javascript">
     function BodyOnLoad(){
         var math_txt = document.getElementById("math-txt")
@@ -20,6 +20,7 @@
         ctx.draw(20, 20);
 
         var svg_2 = document.getElementById("svg-2");
+        ctx = new ContextUI(svg_2);
 
         var y = 30;
         for(let font_family of [ "STIX2-Math", "STIX2-Bold", "STIX2-BoldItalic", "STIX2-Italic", "STIX2-Regular" ]){
@@ -34,7 +35,7 @@
                 else{
                     font_size = 16;
                 }
-                var txt = new TextUI(null, s, svg_2, font_size, font_family)
+                var txt = new TextUI(null, s, ctx, font_size, font_family)
                 var w = txt.width;
                 txt.setXY(x, y);
                 txt.draw(0, 0);
@@ -75,13 +76,15 @@
 </head>
 <body onload="BodyOnLoad()">
 
-    <svg id="svg-1" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="500" height="100" />
+    <svg id="svg-1" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="500" height="150" />
     <svg id="svg-2" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="500" height="200" />
     
     <textarea cols="50" rows="5" id="math-txt">
-        var a : int;
-        a + p[i,j] * 2;
-        a + p[i,j] * 2;
+        p[i[j]];
+        var aij : int;
+        a + p[i[j]] * 2;
+        abc + p[i,j] * 2;
+        abcdefghijkl;
     </textarea>    
 </body>
 </html>

@@ -1,7 +1,17 @@
 
-class Vec2 {
-    constructor(x : number, y : number){
+class Transform {
+    x : number;
+    y : number;
+    scale: number;
 
+    constructor(x : number, y : number, scale: number){
+        this.x  = x;
+        this.y  = y;
+        this.scale  = scale;
+    }
+
+    apply(t: Transform) : Transform {
+        return ;
     }
 }
 
@@ -9,10 +19,26 @@ class Vec2 {
 class ContextUI {
     svg : SVGSVGElement;
     rootUI: ElementUI;
-    ratio : number = 1;
+    transform : Transform[] = [ new Transform(0, 0, 1) ];
 
     constructor(svg : SVGSVGElement){
         this.svg    = svg;
+    }
+
+    currentTransform() : Transform {
+        return this.transform[this.transform.length-1];
+    }
+
+    pushTransform(x : number, y : number, scale: number){
+        var t1 = this.currentTransform();
+        var t2 = new Transform(t1.x + x, t1.y + y, t1.scale * scale);
+        this.transform.push( t2 );
+
+        return t2;
+    }
+
+    popTransform(){
+        this.transform.pop();
     }
 
     makeUI(stmt_list: Statement[]) : ElementUI {
@@ -33,7 +59,7 @@ class ContextUI {
     }
 
     makeText(obj, str: string){
-        return new TextUI(obj, str, this.svg, 16, "STIX2-Regular");
+        return new TextUI(obj, str, this, 16, "STIX2-Regular");
     }
 
     draw(x: number, y:number){
@@ -66,6 +92,8 @@ class ElementUI {
     y       : number = 0;
     width   : number;
     height  : number;
+    ascent  : number;
+    descent : number;
 
     constructor(tag){
         this.tag = tag;
@@ -123,7 +151,8 @@ class HorizontalBlock extends BlockUI {
 
     layout(){
         var x = 0;
-        var max_h = 0;
+        var max_ascent  = 0;
+        var max_descent = 0;
 
         for(let ui of this.children){
             if(ui != this.children[0]){
@@ -135,11 +164,25 @@ class HorizontalBlock extends BlockUI {
             ui.x = x;
 
             x += ui.width;
-            max_h = Math.max(max_h, ui.y + ui.height);
-        }
 
-        this.width  = x;
-        this.height = max_h;
+            max_ascent  = Math.max(max_ascent , ui.ascent - ui.y);
+            max_descent = Math.max(max_descent, ui.y + ui.descent);
+
+            if(ui instanceof TextUI){
+
+                console.log("%s y:%.2f h:%.2f box-y:%.2f box-h:%.2f max_ascent:%.2f max_descent:%.2f", ui.text, ui.y, ui.height, ui.bbox.y, ui.bbox.height, max_ascent, max_descent);
+            }
+            else{
+
+                console.log("y:%.2f h:%.2f max_ascent:%.2f max_descent:%.2f", ui.y, ui.height, max_ascent, max_descent);
+            }
+        }
+        console.log("max_ascent:%.2f max_descent:%.2f height:%.2f", max_ascent, max_descent, max_ascent + max_descent);
+
+        this.width   = x;
+        this.height  = max_ascent + max_descent;
+        this.ascent  = max_ascent;
+        this.descent = max_descent;
     }
 }
 
@@ -152,19 +195,25 @@ class VerticalBlock extends BlockUI {
 
     layout(){
         var x = 0;
-        var y = 0;
+        var y;
         var max_w = 0;
 
         for(let ui of this.children){
-            if(ui != this.children[0]){
-                // 最初でない場合
+            if(ui == this.children[0]){
+                // 最初の場合
 
-                y += this.lineSpacing;
+                y = ui.ascent;
+            }
+            else{
+
+                // 最初でない場合
+                y += this.lineSpacing + ui.ascent;
             }
 
-            ui.setXY(x, y);
+            ui.y = y;
 
-            y += ui.height;
+            y += ui.descent;
+
             max_w = Math.max(max_w, ui.width);
         }
 
@@ -181,23 +230,31 @@ class TextUI extends ElementUI {
     absY      : number = 0;
     bbox      : SVGRect;
 
-    constructor(tag, text: string, svg : SVGSVGElement, font_size: number, font_family: string){
+    constructor(tag, text: string, ctx : ContextUI, font_size: number, font_family: string){
         super(tag);
+
+        var t = ctx.currentTransform();
+
+        this.text = text;
+        this.x = t.x;
+        this.y = t.y;
 
         this.textSVG = document.createElementNS("http://www.w3.org/2000/svg", "text");
         var textNode = document.createTextNode(text);
 
         this.textSVG.appendChild(textNode);
         this.textSVG.setAttribute("font-family", font_family);
-        this.textSVG.setAttribute("font-size", "" + font_size);
+        this.textSVG.setAttribute("font-size", "" + (t.scale * font_size));
 //        this.textSVG.setAttribute("alignment-baseline", "baseline");//, "text-before-edge");//, "before-edge");
         this.textSVG.setAttribute("dominant-baseline", "mathematical");//, "text-before-edge");//"hanging");
 
-        svg.appendChild(this.textSVG);
+        ctx.svg.appendChild(this.textSVG);
 
         this.bbox = this.textSVG.getBBox();
         this.width = this.bbox.width;
         this.height = this.bbox.height;
+        this.ascent = - this.bbox.y;
+        this.descent = this.height - this.ascent;
 //            w = this.textSVG.getComputedTextLength();
 
         this.border = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -207,7 +264,7 @@ class TextUI extends ElementUI {
         this.border.setAttribute("height", "" + this.height);
         this.border.setAttribute("stroke-width", "0.2px");
 
-        svg.appendChild(this.border);
+        ctx.svg.appendChild(this.border);
     }
     
     draw(offset_x: number, offset_y: number){
