@@ -183,6 +183,29 @@ class BlockUI extends ElementUI {
             ui.draw(offset_x + this.x, offset_y + this.y);
         }
     }
+
+    layoutIntegral(){
+        var ui0 = this.children[0];
+        var ui1 = this.children[1];
+        var ui2 = this.children[2];
+        
+        var x = 0;
+        var y;
+
+        ui1.y = 0;
+
+        ui0.x = ui1.width;
+        ui0.y = - ui1.ascent;
+
+        ui2.x = ui1.width / 2;
+        ui2.y = ui1.descent;
+
+        this.ascent  = ui1.ascent + ui0.ascent;
+        this.descent = ui1.descent + ui2.descent;
+
+        this.width   = Math.max(ui0.x + ui0.width, ui2.x + ui2.width);
+        this.height  = this.ascent + this.descent;
+    }
 }
 
 class HorizontalBlock extends BlockUI {

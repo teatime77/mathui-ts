@@ -235,12 +235,30 @@ class Apply extends Term {
         return ctx.makeHorizontalBlock(this, [ sum_head, this.args[3] ]);
     }
 
+    /*
+        int(i, 0, N, p[i])
+    */
+    makeIntegral(ctx : ContextUI) : ElementUI{
+        ctx.pushTransform(0, 0, 0.3);
+        var int_to   = this.args[2].makeUI(ctx);
+        var int_from = this.args[1].makeUI(ctx);
+        ctx.popTransform();
+
+        var int_head = ctx.makeVerticalBlock(this, [ int_to, "∫", int_from ]);
+        int_head.layoutIntegral();
+
+        return ctx.makeHorizontalBlock(this, [ int_head, this.args[3], "d", this.args[0] ]);
+    }
+
     makeUI(ctx : ContextUI) : ElementUI{
         if(this.functionApp.name == "sum"){
             return this.makeSum(ctx);
         }
         else if(this.functionApp.name == "/"){
             return this.makeDiv(ctx);
+        }
+        else if(this.functionApp.name == "int"){
+            return this.makeIntegral(ctx);
         }
 
         var blc = new HorizontalBlock(this)
