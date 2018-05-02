@@ -209,7 +209,26 @@ class Apply extends Term {
         }
     }
 
+    /*
+        sum(i, 0, N, p[i])
+    */
+    makeSum(ctx : ContextUI) : ElementUI{
+        ctx.pushTransform(0, 0, 0.5);
+        var sum_to   = this.args[2].makeUI(ctx);
+        var sum_from = ctx.makeHorizontalBlock(this, [this.args[0], "=", this.args[1]]);
+        ctx.popTransform();
+
+        var sum_head = ctx.makeVerticalBlock(this, [ sum_to, "∑", sum_from ]);
+        sum_head.layout2(1);
+
+        return ctx.makeHorizontalBlock(this, [ sum_head, this.args[3] ]);
+    }
+
     makeUI(ctx : ContextUI) : ElementUI{
+        if(this.functionApp.name == "sum"){
+            return this.makeSum(ctx);
+        }
+
         var blc = new HorizontalBlock(this)
 
         var op: string;

@@ -58,8 +58,51 @@ class ContextUI {
         return blc;
     }
 
-    makeText(obj, str: string){
-        return new TextUI(obj, str, this, 16, "STIX2-Regular");
+    makeText(obj, str: string, font_family:string = "STIX2-Regular"){
+        return new TextUI(obj, str, this, 16, font_family);
+    }
+
+    makeHorizontalBlock(tag, args: (string | Term | ElementUI)[]) : HorizontalBlock {
+        var blc = new HorizontalBlock(tag);
+
+        for(let arg of args){
+            if(arg instanceof Term){
+
+                blc.add(arg.makeUI(this));
+            }
+            else if(arg instanceof ElementUI){
+
+                blc.add(arg);
+            }
+            else if(typeof(arg) == "string"){
+
+                blc.add(this.makeText(tag, arg, "STIX2-Math"));
+            }
+        }
+
+        blc.layout();
+        return blc;
+    }
+
+    makeVerticalBlock(tag, args: (string | Term | ElementUI)[]) : VerticalBlock {
+        var blc = new VerticalBlock(tag);
+
+        for(let arg of args){
+            if(arg instanceof Term){
+
+                blc.add(arg.makeUI(this));
+            }
+            else if(arg instanceof ElementUI){
+
+                blc.add(arg);
+            }
+            else if(typeof(arg) == "string"){
+
+                blc.add(this.makeText(tag, arg, "STIX2-Math"));
+            }
+        }
+
+        return blc;
     }
 
     draw(x: number, y:number){
@@ -219,6 +262,42 @@ class VerticalBlock extends BlockUI {
 
         this.width  = max_w;
         this.height = y;
+    }
+
+    layout2(base_idx: number){
+        var x = 0;
+        var y;
+
+        var base_ui = this.children[base_idx];
+        base_ui.y = 0;
+        var max_w = base_ui.width;
+
+        var ascent = base_ui.ascent;
+        for(var i = base_idx - 1; 0 <= i; i--){
+
+            var ui = this.children[i];
+            ui.y   = - (ascent + ui.descent);
+            ascent += ui.height;
+            max_w = Math.max(max_w, ui.width);
+        }
+        this.ascent = ascent;
+
+        var descent = base_ui.descent;
+        for(var i = base_idx + 1; i < this.children.length; i++){
+
+            var ui = this.children[i];
+            ui.y   = descent + ui.ascent;
+            descent += ui.height;
+            max_w = Math.max(max_w, ui.width);
+        }
+        this.descent = descent;
+
+        for(let ui of this.children){
+            ui.x = (max_w - ui.width) / 2;
+        }
+
+        this.width  = max_w;
+        this.height = this.ascent + this.descent;
     }
 }
 

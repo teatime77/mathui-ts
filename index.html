@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>数式処理</title>
-    <script type="text/javascript" src="./src/main.js?ver=32"></script>
+    <script type="text/javascript" src="./src/main.js?ver=51"></script>
     <script type="text/javascript">
     function BodyOnLoad(){
         var math_txt = document.getElementById("math-txt")
@@ -17,7 +17,7 @@
         var svg_1 = document.getElementById("svg-1");
         var ctx = new ContextUI(svg_1);
         ctx.makeUI(stmt_list);
-        ctx.draw(20, 20);
+        ctx.draw(10, 0);
 
         var svg_2 = document.getElementById("svg-2");
         ctx = new ContextUI(svg_2);
@@ -80,6 +80,8 @@
     <svg id="svg-2" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="500" height="200" />
     
     <textarea cols="50" rows="5" id="math-txt">
+        A;
+        sum(i, 0, N, p[i]);
         p[i[j]];
         var aij : int;
         a + p[i[j]] * 2;
