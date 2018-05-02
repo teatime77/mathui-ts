@@ -293,7 +293,15 @@ class VerticalBlock extends BlockUI {
         this.descent = descent;
 
         for(let ui of this.children){
-            ui.x = (max_w - ui.width) / 2;
+            if(ui instanceof LineUI){
+
+                ui.x = 0;
+                ui.width = max_w;
+            }
+            else{
+
+                ui.x = (max_w - ui.width) / 2;
+            }
         }
 
         this.width  = max_w;
@@ -364,3 +372,44 @@ class TextUI extends ElementUI {
     }
 }
 
+
+class LineUI extends ElementUI {
+    absX      : number = 0;
+    absY      : number = 0;
+    line      : SVGLineElement;
+
+    constructor(tag, x1: number, y1: number, width: number, ctx : ContextUI){
+        super(tag);
+
+        var t = ctx.currentTransform();
+
+        this.x = t.x;
+        this.y = t.y;
+
+        this.width   = width;
+        this.height  = 4;
+        this.ascent  = 2;
+        this.descent = 2;
+    
+        this.line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        this.line.setAttribute("stroke", "black");
+        this.line.setAttribute("stroke-width", "1px");
+
+        ctx.svg.appendChild(this.line);
+    }
+    
+    draw(offset_x: number, offset_y: number){
+        var abs_x = offset_x + this.x;
+        var abs_y = offset_y + this.y;
+
+        if(this.absX != abs_x || this.absY != abs_y){
+            this.absX   = abs_x;
+            this.absY   = abs_y;
+
+            this.line.setAttribute("x1", "" + abs_x + "px");
+            this.line.setAttribute("y1", "" + abs_y + "px");
+            this.line.setAttribute("x2", "" + (abs_x + this.width) + "px");
+            this.line.setAttribute("y2", "" + abs_y + "px");
+        }
+    }
+}

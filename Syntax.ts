@@ -209,6 +209,17 @@ class Apply extends Term {
         }
     }
 
+
+    /*
+        
+    */
+    makeDiv(ctx : ContextUI) : ElementUI{
+        var div = ctx.makeVerticalBlock(this, [this.args[0], new LineUI(this, 0, 0, 1, ctx), this.args[1]]);
+        div.layout2(1);
+
+        return div;
+    }
+
     /*
         sum(i, 0, N, p[i])
     */
@@ -227,6 +238,9 @@ class Apply extends Term {
     makeUI(ctx : ContextUI) : ElementUI{
         if(this.functionApp.name == "sum"){
             return this.makeSum(ctx);
+        }
+        else if(this.functionApp.name == "/"){
+            return this.makeDiv(ctx);
         }
 
         var blc = new HorizontalBlock(this)
