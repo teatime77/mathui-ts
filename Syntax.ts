@@ -23,6 +23,23 @@ class Variable {
         }
     }
 
+
+    /*
+        コピーを返します。
+    */
+    clone(var_tbl: Map<Variable, Variable> = null) : Variable{
+        if(var_tbl == null) {
+            var_tbl = new Map<Variable, Variable>();
+        }
+
+        var domain = (this.domain == null ? null : this.domain.clone(var_tbl));
+        var v1 = new Variable(this.name, this.typeVar, domain);
+        var_tbl.set(this, v1);
+
+        return v1;
+    }
+
+
     makeUI(ctx : ContextUI) : ElementUI{
         var blc = new HorizontalBlock(this);
 
@@ -102,34 +119,38 @@ class Term extends Statement {
 
     // 項の型
     typeTerm : Class;
+
+    eq(t: Term) : boolean{
+        return false;
+    }
+
+    clone(var_tbl): Term {
+        return null;
+    }
 }
 
 /*
     数値定数
 */
 class Constant extends Term {
-    text : string;
-    constructor(text : string, sub_type : TokenSubType) {
+    constructor(value : number, type_term : Class) {
         super();
 
-        this.text = text;
+        this.value = value;
+        this.typeTerm = type_term;
+    }
 
-        switch (sub_type) {
-        case TokenSubType.integer:
-            this.value = parseInt(text);
-            this.typeTerm = IntClass;
-            break;
 
-        case TokenSubType.float:
-        case TokenSubType.double:
-            this.value = parseFloat(text);
-            this.typeTerm = RealClass;
-            break;
-        }
+    /*
+        コピーを返します。
+    */
+    clone(var_tbl: Map<Variable, Variable>) : Constant {
+            
+        return new Constant(this.value, this.typeTerm);
     }
 
     makeUI(ctx : ContextUI) : ElementUI {
-        return ctx.makeText(this, this.text);
+        return ctx.makeText(this, "" + this.value);
     }
 }
 
@@ -143,17 +164,49 @@ class Reference extends Term {
     // 配列の添え字
     indexes : Term[];
 
-    constructor(name : string, ref_var : Variable, idx : Term[]) {
+    constructor(name : string, ref_var : Variable, idx : Term[] = null, value: number = 1) {
         super();
         this.name = name;
         this.varRef = ref_var;
         this.indexes = idx;
+        this.value   = value;
 
         if (this.indexes != null) {
             for(let t of this.indexes) {
                 t.parent = this;
             }
         }
+    }
+
+    /*
+        コピーを返します。
+    */
+    clone(var_tbl: Map<Variable, Variable> = null) : Reference{
+        var var_ref: Variable;
+        var clone_ref: Reference;
+
+        if (var_tbl != null && var_tbl.has(this.varRef)) {
+
+            var_ref = var_tbl.get(this.varRef);
+        }
+        else{
+
+            var_ref = this.varRef;
+        }
+
+        if (this.indexes == null) {
+            clone_ref = new Reference(this.name, var_ref, null, this.value);
+        }
+        else {
+
+            var idx: Term[] = this.indexes.map(t => t.clone(var_tbl));
+
+            clone_ref = new Reference(this.name, var_ref, idx, this.value);
+        }
+
+        clone_ref.typeTerm = this.typeTerm;
+
+        return clone_ref;
     }
 
     static FromVariable(v : Variable) {
@@ -209,6 +262,18 @@ class Apply extends Term {
         }
     }
 
+    /*
+        コピーを返します。
+    */
+    clone(var_tbl: Map<Variable, Variable> = null) : Apply {
+        var args: Term[] = this.args.map(t => t.clone(var_tbl));
+        var app = new Apply(this.functionApp.clone(var_tbl), args);
+
+        app.value = this.value;
+        app.typeTerm = this.typeTerm;
+
+        return app;
+    }
 
     /*
         
@@ -307,7 +372,21 @@ class Apply extends Term {
     変数宣言文
 */
 class VariableDeclaration extends Statement {
-    variables : Variable[] = new Array<Variable>();
+    variables : Variable[];
+
+    constructor(variables : Variable[]){
+        super();
+        this.variables = variables;
+    }
+
+    /*
+        コピーを返します。
+    */
+    clone(var_tbl: Map<Variable, Variable> = null) : VariableDeclaration {
+        var vars = this.variables.map(x => x.clone(var_tbl));
+
+        return new VariableDeclaration(vars);
+    }
 
     makeUI(ctx : ContextUI){
         var blc = new HorizontalBlock(this)

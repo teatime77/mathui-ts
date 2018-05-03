@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>数式処理</title>
-    <script type="text/javascript" src="./src/main.js?ver=85"></script>
+    <script type="text/javascript" src="./src/main.js?ver=89"></script>
     <script type="text/javascript">
     function BodyOnLoad(){
         var math_txt = document.getElementById("math-txt")
@@ -13,10 +13,12 @@
 
         var parser = new Parser();
         var stmt_list = parser.parse(token_list);
+        var copy_stmt_list = stmt_list.map(x => x.clone(null));
+        var dup_list = stmt_list.concat(copy_stmt_list);
 
         var svg_1 = document.getElementById("svg-1");
         var ctx = new ContextUI(svg_1);
-        ctx.makeUI(stmt_list);
+        ctx.makeUI(dup_list);
         ctx.draw(10, 0);
 
         var svg_2 = document.getElementById("svg-2");
@@ -75,7 +77,10 @@
 
 </head>
 <body onload="BodyOnLoad()">
-    <svg id="svg-1" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="150" height="230" />
+    <div style="width:150px; height:200px; border:2px; overflow:scroll">
+        <svg id="svg-1" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" />
+    </div>
+
     <svg id="svg-2" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="350" height="200" />
 
     <textarea cols="50" rows="5" id="math-txt">

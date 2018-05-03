@@ -191,9 +191,9 @@ class Parser {
     }
 
 
-        /*
-            基本の式を読みます。
-        */
+    /*
+        基本の式を読みます。
+    */
     primaryExpression(): Term{
         if(this.currentToken.typeTkn == TokenType.identifier) {
             // 変数参照を読みます。
@@ -216,8 +216,20 @@ class Parser {
 
             var num : Token = this.getTokenT(TokenType.Number);
 
+            var type_term;
+            switch (num.subType) {
+            case TokenSubType.integer:
+                type_term = IntClass;
+                break;
+        
+            case TokenSubType.float:
+            case TokenSubType.double:
+                type_term = RealClass;
+                break;
+            }
+
             // 数値を返します。
-            return new Constant(num.text, num.subType);
+            return new Constant(parseFloat(num.text), type_term);
         }
         else if (this.currentToken.text == "(") {
 
@@ -351,18 +363,17 @@ class Parser {
     }
 
     readVariableDeclaration() : VariableDeclaration {
-        var dcl : VariableDeclaration = new VariableDeclaration();
-
         this.getToken("var");
 
+        var vars: Variable[] = [];
         while(this.currentToken.text != ";"){
             var va = this.readVariable();
-            dcl.variables.push(va);
+            vars.push(va);
         }
 
         this.getToken(";");
 
-        return dcl;
+        return new VariableDeclaration(vars);
     }
 
     readStatement(){
