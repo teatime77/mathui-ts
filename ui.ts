@@ -1,13 +1,16 @@
+var C_5 = 0.5;
 
 class Transform {
     x : number;
     y : number;
-    scale: number;
+    xscale: number;
+    yscale: number;
 
-    constructor(x : number, y : number, scale: number){
+    constructor(x : number, y : number, xscale: number, yscale: number){
         this.x  = x;
         this.y  = y;
-        this.scale  = scale;
+        this.xscale  = xscale;
+        this.yscale  = yscale;
     }
 
     apply(t: Transform) : Transform {
@@ -19,26 +22,26 @@ class Transform {
 class ContextUI {
     svg : SVGSVGElement;
     rootUI: ElementUI;
-    transform : Transform[] = [ new Transform(0, 0, 1) ];
+    transforms : Transform[] = [ new Transform(0, 0, 1, 1) ];
 
     constructor(svg : SVGSVGElement){
         this.svg    = svg;
     }
 
     currentTransform() : Transform {
-        return this.transform[this.transform.length-1];
+        return this.transforms[this.transforms.length-1];
     }
 
-    pushTransform(x : number, y : number, scale: number){
+    pushTransform(x : number, y : number, xscale: number, yscale: number){
         var t1 = this.currentTransform();
-        var t2 = new Transform(t1.x + x, t1.y + y, t1.scale * scale);
-        this.transform.push( t2 );
+        var t2 = new Transform(t1.x + x, t1.y + y, t1.xscale * xscale, t1.yscale * yscale);
+        this.transforms.push( t2 );
 
         return t2;
     }
 
     popTransform(){
-        this.transform.pop();
+        this.transforms.pop();
     }
 
     makeUI(stmt_list: Statement[]) : ElementUI {
@@ -58,50 +61,14 @@ class ContextUI {
         return blc;
     }
 
-    makeText(obj, str: string, font_family:string = "STIX2-Regular"){
-        return new TextUI(obj, str, this, 16, font_family);
+    makeText(obj, str: string, font_family:string = "STIX2-Regular", transform: Transform = null){
+        return new TextUI(obj, str, this, 16, font_family, transform);
     }
 
     makeHorizontalBlock(tag, args: (string | Term | ElementUI)[]) : HorizontalBlock {
-        var blc = new HorizontalBlock(tag);
-
-        for(let arg of args){
-            if(arg instanceof Term){
-
-                blc.add(arg.makeUI(this));
-            }
-            else if(arg instanceof ElementUI){
-
-                blc.add(arg);
-            }
-            else if(typeof(arg) == "string"){
-
-                blc.add(this.makeText(tag, arg, "STIX2-Math"));
-            }
-        }
+        var blc = new HorizontalBlock(tag, this, args);
 
         blc.layout();
-        return blc;
-    }
-
-    makeVerticalBlock(tag, args: (string | Term | ElementUI)[]) : VerticalBlock {
-        var blc = new VerticalBlock(tag);
-
-        for(let arg of args){
-            if(arg instanceof Term){
-
-                blc.add(arg.makeUI(this));
-            }
-            else if(arg instanceof ElementUI){
-
-                blc.add(arg);
-            }
-            else if(typeof(arg) == "string"){
-
-                blc.add(this.makeText(tag, arg, "STIX2-Math"));
-            }
-        }
-
         return blc;
     }
 
@@ -137,6 +104,7 @@ class ElementUI {
     height  : number;
     ascent  : number;
     descent : number;
+    transform: Transform = null;
 
     constructor(tag){
         this.tag = tag;
@@ -157,8 +125,26 @@ class ElementUI {
 class BlockUI extends ElementUI {
     children : ElementUI[] = new Array<ElementUI>();
 
-    constructor(tag){
+    constructor(tag, ctx: ContextUI = null, args: (string | Term | ElementUI)[] = null){
         super(tag);
+
+        if(ctx != null){
+
+            for(let arg of args){
+                if(arg instanceof Term){
+
+                    this.add(arg.makeUI(ctx));
+                }
+                else if(arg instanceof ElementUI){
+
+                    this.add(arg);
+                }
+                else if(typeof(arg) == "string"){
+
+                    this.add(ctx.makeText(tag, arg, "STIX2-Math"));
+                }
+            }
+        }
     }
 
     lastUI() : ElementUI {
@@ -206,13 +192,35 @@ class BlockUI extends ElementUI {
         this.width   = Math.max(ui0.x + ui0.width, ui2.x + ui2.width);
         this.height  = this.ascent + this.descent;
     }
+
+    layoutSqrt(){
+        var sym = this.children[0];
+        var line = this.children[1];
+        var arg = this.children[2];
+        
+        sym.x = 0;
+        sym.y = 0;
+
+        line.x = sym.width;
+        line.y = - sym.ascent + C_5;
+        line.width = arg.width;
+
+        arg.x = sym.width;
+        arg.y = 0;
+
+        this.ascent  = Math.max(sym.ascent, line.y + line.ascent, arg.ascent);
+        this.descent = Math.max(sym.descent, arg.descent);
+
+        this.width   = arg.x + arg.width;
+        this.height  = this.ascent + this.descent;
+    }
 }
 
 class HorizontalBlock extends BlockUI {
     wordSpacing : number = 1;
 
-    constructor(tag){
-        super(tag);
+    constructor(tag, ctx: ContextUI = null, args: (string | Term | ElementUI)[] = null){
+        super(tag, ctx, args);
     }
 
     layout(){
@@ -236,7 +244,7 @@ class HorizontalBlock extends BlockUI {
 
             if(ui instanceof TextUI){
 
-                console.log("%s y:%.2f h:%.2f box-y:%.2f box-h:%.2f max_ascent:%.2f max_descent:%.2f", ui.text, ui.y, ui.height, ui.bbox.y, ui.bbox.height, max_ascent, max_descent);
+                console.log("%s y:%.2f h:%.2f box-y:%.2f box-h:%.2f max_ascent:%.2f max_descent:%.2f", ui.text, ui.y, ui.height, ui.ascent, ui.height, max_ascent, max_descent);
             }
             else{
 
@@ -255,8 +263,8 @@ class HorizontalBlock extends BlockUI {
 class VerticalBlock extends BlockUI {
     lineSpacing : number = 1;
 
-    constructor(tag){
-        super(tag);
+    constructor(tag, ctx: ContextUI = null, args: (string | Term | ElementUI)[] = null){
+        super(tag, ctx, args);
     }
 
     layout(){
@@ -338,9 +346,8 @@ class TextUI extends ElementUI {
     textSVG   : SVGTextElement;
     absX      : number = 0;
     absY      : number = 0;
-    bbox      : SVGRect;
 
-    constructor(tag, text: string, ctx : ContextUI, font_size: number, font_family: string){
+    constructor(tag, text: string, ctx : ContextUI, font_size: number, font_family: string, transform: Transform = null){
         super(tag);
 
         var t = ctx.currentTransform();
@@ -349,23 +356,35 @@ class TextUI extends ElementUI {
         this.x = t.x;
         this.y = t.y;
 
+        this.transform = transform;
+
         this.textSVG = document.createElementNS("http://www.w3.org/2000/svg", "text");
         var textNode = document.createTextNode(text);
 
         this.textSVG.appendChild(textNode);
         this.textSVG.setAttribute("font-family", font_family);
-        this.textSVG.setAttribute("font-size", "" + (t.scale * font_size));
+        this.textSVG.setAttribute("font-size", "" + (t.xscale * font_size));
 //        this.textSVG.setAttribute("alignment-baseline", "baseline");//, "text-before-edge");//, "before-edge");
         this.textSVG.setAttribute("dominant-baseline", "mathematical");//, "text-before-edge");//"hanging");
 
         ctx.svg.appendChild(this.textSVG);
 
-        this.bbox = this.textSVG.getBBox();
-        this.width = this.bbox.width;
-        this.height = this.bbox.height;
-        this.ascent = - this.bbox.y;
+        var bbox = this.textSVG.getBBox();
+
+        this.width   = bbox.width;
+        this.height  = bbox.height;
+
+        this.ascent  = - bbox.y;
         this.descent = this.height - this.ascent;
-//            w = this.textSVG.getComputedTextLength();
+
+        if(transform != null){
+
+            this.width   *= transform.xscale;
+
+            this.height  *= transform.yscale;
+            this.ascent  *= transform.yscale;
+            this.descent *= transform.yscale;
+        }
 
         this.border = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         this.border.setAttribute("fill", "transparent");
@@ -390,8 +409,16 @@ class TextUI extends ElementUI {
         if(this.absY != abs_y){
             this.absY   = abs_y;
             this.textSVG.setAttribute("y", "" + abs_y);
-            this.border.setAttribute("y", "" + (abs_y + this.bbox.y));//- this.bbox.height 
+            this.border.setAttribute("y", "" + (abs_y - this.ascent));
         }
+
+
+        if(this.transform != null){
+
+            var s = `translate(${abs_x}, ${abs_y}) scale(${this.transform.xscale},${this.transform.yscale}) translate(${-abs_x}, ${-abs_y})`;
+            this.textSVG.setAttribute("transform", s);
+        }
+        
     }
 }
 

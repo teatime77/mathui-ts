@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>数式処理</title>
-    <script type="text/javascript" src="./src/main.js?ver=60"></script>
+    <script type="text/javascript" src="./src/main.js?ver=85"></script>
     <script type="text/javascript">
     function BodyOnLoad(){
         var math_txt = document.getElementById("math-txt")
@@ -75,19 +75,19 @@
 
 </head>
 <body onload="BodyOnLoad()">
-    <svg id="svg-1" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="150" height="200" />
+    <svg id="svg-1" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="150" height="230" />
     <svg id="svg-2" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="350" height="200" />
-    
+
     <textarea cols="50" rows="5" id="math-txt">
-        A;
-        int(x, (a*b)/(a+b), N, 2 * f(x));
+        a;
+        sqrt(x/y) * int(x, (a*b)/(a+b), N, 2 * sqrt(x/y));
         a / (b + c);
         sum(i, 0, N, p[i]);
         p[i[j]];
         var aij : int;
         a + p[i[j]] * 2;
         abc + p[i,j] * 2;
-        abcdefghijkl;
+        abcdefghijkl;            
     </textarea>    
 </body>
 </html>
