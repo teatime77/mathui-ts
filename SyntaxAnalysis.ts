@@ -366,9 +366,14 @@ class Parser {
         this.getToken("var");
 
         var vars: Variable[] = [];
-        while(this.currentToken.text != ";"){
+        while(true){
             var va = this.readVariable();
             vars.push(va);
+
+            if(this.currentToken.text != ","){
+                break;
+            }
+            this.getToken(",");
         }
 
         this.getToken(";");

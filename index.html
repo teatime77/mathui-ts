@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>数式処理</title>
-    <script type="text/javascript" src="./src/main.js?ver=121"></script>
+    <script type="text/javascript" src="./src/main.js?ver=145"></script>
     <script type="text/javascript">
     function BodyOnLoad(){
         var math_txt = document.getElementById("math-txt")
@@ -18,7 +18,11 @@
 
         var svg_1 = document.getElementById("svg-1");
         var ctx = new ContextUI(svg_1);
-        ctx.makeUI(dup_list);
+        var flow = new StatementFlow(dup_list);
+
+        ctx.rootUI = flow.makeUI(ctx);
+        ctx.rootUI.setXY(0, 0);
+
         ctx.draw(10, 0);
 
         var svg_2 = document.getElementById("svg-2");
@@ -94,7 +98,7 @@
         a / (b + c);
         sum(i, 0, N, p[i]);
         p[i[j]];
-        var aij : int;
+        var aij : int, B: int;
         a + p[i[j]] * 2;
         abc + p[i,j] * 2;
         abcdefghijkl;            

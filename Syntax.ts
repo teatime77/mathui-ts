@@ -1,5 +1,3 @@
-
-
 class Variable {
     // 親
     parentVar : object;
@@ -41,16 +39,7 @@ class Variable {
 
 
     makeUI(ctx : ContextUI) : ElementUI{
-        var blc = new HorizontalBlock(this);
-
-        blc.add( ctx.makeText(this, this.name) );
-        blc.add( ctx.makeText(this, "∈") );
-        
-        blc.add( this.typeVar.makeUI(ctx) );
-
-        blc.layout();
-
-        return blc;
+        return new HorizontalBlock(this, ctx, [ this.name, "∈", this.typeVar ]).layoutHorizontal();
     }
 }
 
@@ -139,7 +128,6 @@ class Constant extends Term {
         this.value = value;
         this.typeTerm = type_term;
     }
-
 
     /*
         コピーを返します。
@@ -236,7 +224,7 @@ class Reference extends Term {
         }
         ctx.popTransform();
 
-        blc.layout();
+        blc.layoutHorizontal();
         return blc;
     }
 }
@@ -275,14 +263,19 @@ class Apply extends Term {
         return app;
     }
 
+    isIntegral(){
+        return this.functionApp.name == "int";
+    }
+
+    isSqrt(){
+        return this.functionApp.name == "sqrt";
+    }
+
     /*
         
     */
     makeDiv(ctx : ContextUI) : ElementUI{
-        var div = new VerticalBlock(this, ctx, [this.args[0], new LineUI(this, 0, 0, 1, ctx), this.args[1]]);
-        div.layout2(1);
-
-        return div;
+        return new VerticalBlock(this, ctx, [this.args[0], new LineUI(this, 0, 0, 1, ctx), this.args[1]]).layoutBaseLine(1);
     }
 
     /*
@@ -291,13 +284,14 @@ class Apply extends Term {
     makeSum(ctx : ContextUI) : ElementUI{
         ctx.pushTransform(0, 0, 0.5, 0.5);
         var sum_to   = this.args[2].makeUI(ctx);
-        var sum_from = ctx.makeHorizontalBlock(this, [this.args[0], "=", this.args[1]]);
+        var sum_from = new HorizontalBlock(this, ctx, [this.args[0], "=", this.args[1]]).layoutHorizontal();
         ctx.popTransform();
 
         var sum_head = new VerticalBlock(this, ctx, [ sum_to, "∑", sum_from ]);
-        sum_head.layout2(1);
 
-        return ctx.makeHorizontalBlock(this, [ sum_head, this.args[3] ]);
+        sum_head.layoutBaseLine(1);
+
+        return new HorizontalBlock(this, ctx, [ sum_head, this.args[3] ]).layoutHorizontal();
     }
 
     /*
@@ -312,7 +306,7 @@ class Apply extends Term {
         var int_head = new VerticalBlock(this, ctx, [ int_to, "∫", int_from ]);
         int_head.layoutIntegral();
 
-        return ctx.makeHorizontalBlock(this, [ int_head, this.args[3], "d", this.args[0] ]);
+        return new HorizontalBlock(this, ctx, [ int_head, this.args[3], "d", this.args[0] ]).layoutHorizontal();
     }
 
     /*
@@ -322,11 +316,11 @@ class Apply extends Term {
         var arg = this.args[0].makeUI(ctx);
 
         var sym = ctx.makeText(this, "√", "STIX2-Math", new Transform(0, 0, 1, arg.height/16));
-        var blc = new BlockUI(this, ctx, [ sym, new LineUI(this, 0, 0, 1, ctx), arg ]);
-
-        blc.layoutSqrt();
-
-        return blc;
+//        ctx.pushTransform(0, 0, 1, arg.height/16);
+//        var sym = ctx.makeText(this, "√", "STIX2-Math");
+//        ctx.popTransform();
+        
+        return new BlockUI(this, ctx, [ sym, new LineUI(this, 0, 0, 1, ctx), arg ]).layoutSqrt();
     }
 
     makeUI(ctx : ContextUI) : ElementUI{
@@ -336,14 +330,12 @@ class Apply extends Term {
         else if(this.functionApp.name == "/"){
             return this.makeDiv(ctx);
         }
-        else if(this.functionApp.name == "int"){
+        else if(this.isIntegral()){
             return this.makeIntegral(ctx);
         }
-        else if(this.functionApp.name == "sqrt"){
+        else if(this.isSqrt()){
             return this.makeSqrt(ctx);
         }
-
-        var blc = new HorizontalBlock(this)
 
         var op: string;
         if(this.functionApp.name == "*"){
@@ -352,19 +344,8 @@ class Apply extends Term {
         else{
             op = this.functionApp.name;
         }
-        for(let arg of this.args){
-            if(arg != this.args[0]){
-                // 最初でない場合
 
-                blc.add( ctx.makeText(this, op) );
-            }
-
-            blc.add( arg.makeUI(ctx) );
-        }
-
-        blc.layout();
-
-        return blc;
+        return new HorizontalBlock(this, ctx, joinMath(op, this.args)).layoutHorizontal();
     }
 }
 
@@ -389,21 +370,7 @@ class VariableDeclaration extends Statement {
     }
 
     makeUI(ctx : ContextUI){
-        var blc = new HorizontalBlock(this)
-
-        for(let va of this.variables){
-            if(va != this.variables[0]){
-                // 最初でない場合
-
-                blc.add( ctx.makeText(this, ",") );
-            }
-
-            blc.add( va.makeUI(ctx) );
-        }
-
-        blc.layout();
-
-        return blc;
+        return new HorizontalBlock(this, ctx, joinMath(",", this.variables)).layoutHorizontal();
     }
 }
 
@@ -412,3 +379,14 @@ class Predicate {
     expression : Term;
 }
 
+class StatementFlow {
+    statements: Statement[];
+
+    constructor(statements: Statement[]){
+        this.statements = statements;
+    }
+
+    makeUI(ctx : ContextUI) : VerticalBlock{
+        return new VerticalBlock(this, ctx, this.statements).layoutVertical();
+    }
+}

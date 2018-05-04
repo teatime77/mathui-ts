@@ -1,5 +1,19 @@
 var C_5 = 0.5;
 var CurrentUI : ElementUI = null;
+type MathComponent = string | Term | Statement | Variable | Class | ElementUI;
+
+function joinMath(joint: MathComponent, args: MathComponent[]) : MathComponent[]{
+    var v = [];
+
+    for(let arg of args){
+        if(arg != args[0]){
+            v.push(joint);
+        }
+        v.push(arg);
+    }
+
+    return v;
+}
 
 function initDocument(){
     
@@ -69,15 +83,18 @@ function initDocument(){
 
             var rc = document.getElementById("svg-div").getBoundingClientRect();            
 
+            CurrentUI = null;
             if(ui.tag instanceof Term){
                 var t = ui.tag.clone(null);
                 CurrentUI = t.makeUI(ctx);
+            }
+            else if(ui.tag instanceof Variable){
+                var v = ui.tag.clone(null);
+                CurrentUI = v.makeUI(ctx);
+            }
+            if(CurrentUI != null){
 
-//                ui2.setAttribute("x", `${e.clientX - rc.left + 10}`);
-//                ui2.setAttribute("y", `${e.clientY - rc.top  + 10}`);
-                    
                 CurrentUI.draw(e.clientX - rc.left, e.clientY - rc.top);
-
             }
 
             console.log("mouse down " + e.target["data-ui"].text);
@@ -151,32 +168,8 @@ class ContextUI {
         this.transforms.pop();
     }
 
-    makeUI(stmt_list: Statement[]) : ElementUI {
-        var blc = new VerticalBlock(null);
-
-        var x = 5;
-        var y = 30;
-        for(let stmt of stmt_list){
-            blc.add( stmt.makeUI(this) );
-        }
-
-        blc.layout();
-
-        this.rootUI = blc;
-        this.rootUI.setXY(0, 0);
-
-        return blc;
-    }
-
     makeText(obj, str: string, font_family:string = "STIX2-Regular", transform: Transform = null){
         return new TextUI(obj, str, this, 16, font_family, transform);
-    }
-
-    makeHorizontalBlock(tag, args: (string | Term | ElementUI)[]) : HorizontalBlock {
-        var blc = new HorizontalBlock(tag, this, args);
-
-        blc.layout();
-        return blc;
     }
 
     draw(x: number, y:number){
@@ -219,9 +212,6 @@ class ElementUI {
         this.tag = tag;
     }
 
-    layout(){        
-    }
-
     setXY(x: number, y: number){
         this.x = x;
         this.y = y;
@@ -234,13 +224,25 @@ class ElementUI {
 class BlockUI extends ElementUI {
     children : ElementUI[] = new Array<ElementUI>();
 
-    constructor(tag, ctx: ContextUI = null, args: (string | Term | ElementUI)[] = null){
+    constructor(tag, ctx: ContextUI = null, args: MathComponent[] = null){
         super(tag, ctx);
 
         if(ctx != null){
 
             for(let arg of args){
                 if(arg instanceof Term){
+
+                    this.add(arg.makeUI(ctx));
+                }
+                else if(arg instanceof Statement){
+
+                    this.add(arg.makeUI(ctx));
+                }
+                else if(arg instanceof Variable){
+
+                    this.add(arg.makeUI(ctx));
+                }
+                else if(arg instanceof Class){
 
                     this.add(arg.makeUI(ctx));
                 }
@@ -269,9 +271,6 @@ class BlockUI extends ElementUI {
         console.assert(ui != undefined && ui != null);
         this.children.push(ui);
     }
-
-    layout(){
-    }
     
     draw(offset_x: number, offset_y: number){
         for(let ui of this.children){
@@ -279,7 +278,7 @@ class BlockUI extends ElementUI {
         }
     }
 
-    layoutIntegral(){
+    layoutIntegral() : BlockUI{
         var ui0 = this.children[0];
         var ui1 = this.children[1];
         var ui2 = this.children[2];
@@ -300,9 +299,11 @@ class BlockUI extends ElementUI {
 
         this.width   = Math.max(ui0.x + ui0.width, ui2.x + ui2.width);
         this.height  = this.ascent + this.descent;
+
+        return this;
     }
 
-    layoutSqrt(){
+    layoutSqrt() : BlockUI {
         var sym = this.children[0];
         var line = this.children[1];
         var arg = this.children[2];
@@ -322,17 +323,19 @@ class BlockUI extends ElementUI {
 
         this.width   = arg.x + arg.width;
         this.height  = this.ascent + this.descent;
+
+        return this;
     }
 }
 
 class HorizontalBlock extends BlockUI {
     wordSpacing : number = 1;
 
-    constructor(tag, ctx: ContextUI = null, args: (string | Term | ElementUI)[] = null){
+    constructor(tag, ctx: ContextUI = null, args: MathComponent[] = null){
         super(tag, ctx, args);
     }
 
-    layout(){
+    layoutHorizontal() : HorizontalBlock{
         var x = 0;
         var max_ascent  = 0;
         var max_descent = 0;
@@ -366,17 +369,19 @@ class HorizontalBlock extends BlockUI {
         this.height  = max_ascent + max_descent;
         this.ascent  = max_ascent;
         this.descent = max_descent;
+
+        return this;
     }
 }
 
 class VerticalBlock extends BlockUI {
     lineSpacing : number = 1;
 
-    constructor(tag, ctx: ContextUI = null, args: (string | Term | ElementUI)[] = null){
+    constructor(tag, ctx: ContextUI = null, args: MathComponent[] = null){
         super(tag, ctx, args);
     }
 
-    layout(){
+    layoutVertical() : VerticalBlock {
         var x = 0;
         var y;
         var max_w = 0;
@@ -402,9 +407,11 @@ class VerticalBlock extends BlockUI {
 
         this.width  = max_w;
         this.height = y;
+
+        return this;
     }
 
-    layout2(base_idx: number){
+    layoutBaseLine(base_idx: number) : VerticalBlock{
         var x = 0;
         var y;
 
@@ -446,6 +453,8 @@ class VerticalBlock extends BlockUI {
 
         this.width  = max_w;
         this.height = this.ascent + this.descent;
+
+        return this;
     }
 }
 
@@ -465,6 +474,10 @@ class TextUI extends ElementUI {
         this.x = t.x;
         this.y = t.y;
 
+        if(transform == null){
+            transform = t;
+        }
+
         this.transform = transform;
 
 
@@ -472,14 +485,21 @@ class TextUI extends ElementUI {
         var textNode = document.createTextNode(text);
 
         this.textSVG.appendChild(textNode);
+
+
+
         this.textSVG.setAttribute("font-family", font_family);
-        this.textSVG.setAttribute("font-size", "" + (t.xscale * font_size));
+        this.textSVG.setAttribute("font-size", "" + (font_size));//t.xscale * 
 //        this.textSVG.setAttribute("alignment-baseline", "baseline");//, "text-before-edge");//, "before-edge");
         this.textSVG.setAttribute("dominant-baseline", "mathematical");//, "text-before-edge");//"hanging");
         this.textSVG["data-ui"] = this;
 
         ctx.group.appendChild(this.textSVG);
 
+//        this.textSVG.setAttribute("x", "0");
+//        this.textSVG.setAttribute("y", "0");
+//        this.textSVG.setAttribute("transform", `scale(${t.xscale},${t.yscale})`);
+        
         var bbox = this.textSVG.getBBox();
 
         this.width   = bbox.width;
