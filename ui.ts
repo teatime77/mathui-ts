@@ -1,4 +1,66 @@
 var C_5 = 0.5;
+var CurrentUI : TextUI;
+
+function initDocument(){
+    
+    document.addEventListener('mouseenter', function( e ) {
+        console.log("doc mouse enter ");
+        if(e.target["data-ui"]){
+            e.preventDefault();
+            if(e.target instanceof SVGRectElement){
+    
+                e.target.setAttribute("stroke", "blue");
+            }
+            console.log("mouse enter " + e.target["data-ui"].text);
+        }
+    }, false);
+
+    document.addEventListener('mouseleave', function( e ) {
+        console.log("doc mouse leave ");
+        if(e.target["data-ui"]){
+            
+            e.preventDefault();
+            CurrentUI = null;
+            if(e.target instanceof SVGRectElement){
+
+                e.target.setAttribute("stroke", "red");
+            }
+            console.log("mouse leave " + e.target["data-ui"].text);
+        }
+    }, false);
+    
+    document.addEventListener('mousemove', function( e ) {
+        console.log(`doc mouse move screen:(${e.screenX} ${e.screenY}) client:(${e.clientX} ${e.clientY})` + e.target);
+    }, false);
+
+
+    document.addEventListener('mousedown', function( e ) {
+        if(e.target instanceof Element && e.target["data-ui"]){
+            
+            e.preventDefault();
+            console.log("mouse down " + e.target["data-ui"].text);
+            return false;
+        }
+    }, false);
+
+    document.addEventListener('mouseup', function( e ) {
+        if(e.target instanceof Element && e.target["data-ui"]){
+            
+            e.preventDefault();
+            console.log("mouse up " + e.target["data-ui"].text);
+            return false;
+        }
+    }, false);
+
+    document.addEventListener('contextmenu', function( e ) {
+        if(e.target["data-ui"]){
+            
+            e.preventDefault();
+            return false;
+        }
+    }, false);
+
+}
 
 class Transform {
     x : number;
@@ -358,6 +420,7 @@ class TextUI extends ElementUI {
 
         this.transform = transform;
 
+
         this.textSVG = document.createElementNS("http://www.w3.org/2000/svg", "text");
         var textNode = document.createTextNode(text);
 
@@ -366,6 +429,7 @@ class TextUI extends ElementUI {
         this.textSVG.setAttribute("font-size", "" + (t.xscale * font_size));
 //        this.textSVG.setAttribute("alignment-baseline", "baseline");//, "text-before-edge");//, "before-edge");
         this.textSVG.setAttribute("dominant-baseline", "mathematical");//, "text-before-edge");//"hanging");
+        this.textSVG["data-ui"] = this;
 
         ctx.svg.appendChild(this.textSVG);
 
@@ -387,12 +451,49 @@ class TextUI extends ElementUI {
         }
 
         this.border = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+
         this.border.setAttribute("fill", "transparent");
         this.border.setAttribute("stroke", "red");
         this.border.setAttribute("width", "" + this.width);
         this.border.setAttribute("height", "" + this.height);
         this.border.setAttribute("stroke-width", "0.2px");
 
+        this.border["data-ui"] = this;
+
+        var current_ui = this;
+
+        this.border.addEventListener('mouseenter', function( e ) {
+            e.preventDefault();
+            CurrentUI = current_ui;
+            current_ui.border.setAttribute("stroke", "blue");
+            console.log("mouse enter " + current_ui.text);
+        }, false);
+
+        this.border.addEventListener('mouseleave', function( e ) {
+            e.preventDefault();
+            CurrentUI = null;
+            current_ui.border.setAttribute("stroke", "red");
+            console.log("mouse leave " + current_ui.text);
+        }, false);
+/*
+
+        this.border.addEventListener('mousedown', function( e ) {
+            e.preventDefault();
+            console.log("mouse down " + current_ui.text);
+            return false;
+        }, false);
+
+        this.border.addEventListener('mouseup', function( e ) {
+            e.preventDefault();
+            console.log("mouse up " + current_ui.text);
+            return false;
+        }, false);
+
+        this.border.addEventListener('contextmenu', function( e ) {
+            e.preventDefault();
+            return false;
+        }, false);
+*/
         ctx.svg.appendChild(this.border);
     }
     
