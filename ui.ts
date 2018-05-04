@@ -1,5 +1,5 @@
 var C_5 = 0.5;
-var CurrentUI : TextUI;
+var CurrentUI : ElementUI = null;
 
 function initDocument(){
     
@@ -20,7 +20,6 @@ function initDocument(){
         if(e.target["data-ui"]){
             
             e.preventDefault();
-            CurrentUI = null;
             if(e.target instanceof SVGRectElement){
 
                 e.target.setAttribute("stroke", "red");
@@ -30,7 +29,24 @@ function initDocument(){
     }, false);
     
     document.addEventListener('mousemove', function( e ) {
-        console.log(`doc mouse move screen:(${e.screenX} ${e.screenY}) client:(${e.clientX} ${e.clientY})` + e.target);
+        if(CurrentUI != null){
+
+            var rc = document.getElementById("svg-div").getBoundingClientRect();            
+            CurrentUI.draw(e.clientX - rc.left, e.clientY - rc.top);            
+        }
+        if(e.target instanceof Element && e.target["data-ui"]){
+
+            var div : HTMLElement = document.getElementById("svg-div");
+            var bcr = div.getBoundingClientRect();
+
+            var ui: ElementUI = e.target["data-ui"];
+            var ctx = ui.context;
+
+            var bbox = ui.border.getBBox();
+            var x = ui.border.getAttribute("x");
+            var y = ui.border.getAttribute("y");
+            console.log(`doc mouse move client:(${e.clientX} ${e.clientY}) div:(${bcr.left} ${bcr.top}) client-div:(${e.clientX - bcr.left} ${e.clientY - bcr.top}) box:(${bbox.x} ${bbox.y}) attr:(${x} ${y})` + e.target);
+        }
     }, false);
 
 
@@ -38,6 +54,32 @@ function initDocument(){
         if(e.target instanceof Element && e.target["data-ui"]){
             
             e.preventDefault();
+
+            var ui: ElementUI = e.target["data-ui"];
+            var ctx = ui.context;
+
+            if(ctx.group != ctx.rootGroup){
+
+                ctx.rootGroup.removeChild(ctx.group);
+            }
+            ctx.group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            ctx.rootGroup.appendChild(ctx.group);
+
+            var bbox = ui.border.getBBox();
+
+            var rc = document.getElementById("svg-div").getBoundingClientRect();            
+
+            if(ui.tag instanceof Term){
+                var t = ui.tag.clone(null);
+                CurrentUI = t.makeUI(ctx);
+
+//                ui2.setAttribute("x", `${e.clientX - rc.left + 10}`);
+//                ui2.setAttribute("y", `${e.clientY - rc.top  + 10}`);
+                    
+                CurrentUI.draw(e.clientX - rc.left, e.clientY - rc.top);
+
+            }
+
             console.log("mouse down " + e.target["data-ui"].text);
             return false;
         }
@@ -47,6 +89,7 @@ function initDocument(){
         if(e.target instanceof Element && e.target["data-ui"]){
             
             e.preventDefault();
+            CurrentUI = null;
             console.log("mouse up " + e.target["data-ui"].text);
             return false;
         }
@@ -82,12 +125,14 @@ class Transform {
 
 
 class ContextUI {
-    svg : SVGSVGElement;
+    rootGroup : SVGGElement;
+    group : SVGGElement;
     rootUI: ElementUI;
     transforms : Transform[] = [ new Transform(0, 0, 1, 1) ];
 
-    constructor(svg : SVGSVGElement){
-        this.svg    = svg;
+    constructor(group : SVGGElement){
+        this.rootGroup = group;
+        this.group    = group;
     }
 
     currentTransform() : Transform {
@@ -158,6 +203,7 @@ class ContextUI {
 }
 
 class ElementUI {
+    context : ContextUI;
     border  : SVGRectElement;
     tag;
     x       : number = 0;
@@ -168,7 +214,8 @@ class ElementUI {
     descent : number;
     transform: Transform = null;
 
-    constructor(tag){
+    constructor(tag, ctx: ContextUI){
+        this.context = ctx;
         this.tag = tag;
     }
 
@@ -188,7 +235,7 @@ class BlockUI extends ElementUI {
     children : ElementUI[] = new Array<ElementUI>();
 
     constructor(tag, ctx: ContextUI = null, args: (string | Term | ElementUI)[] = null){
-        super(tag);
+        super(tag, ctx);
 
         if(ctx != null){
 
@@ -410,7 +457,7 @@ class TextUI extends ElementUI {
     absY      : number = 0;
 
     constructor(tag, text: string, ctx : ContextUI, font_size: number, font_family: string, transform: Transform = null){
-        super(tag);
+        super(tag, ctx);
 
         var t = ctx.currentTransform();
 
@@ -431,7 +478,7 @@ class TextUI extends ElementUI {
         this.textSVG.setAttribute("dominant-baseline", "mathematical");//, "text-before-edge");//"hanging");
         this.textSVG["data-ui"] = this;
 
-        ctx.svg.appendChild(this.textSVG);
+        ctx.group.appendChild(this.textSVG);
 
         var bbox = this.textSVG.getBBox();
 
@@ -464,14 +511,12 @@ class TextUI extends ElementUI {
 
         this.border.addEventListener('mouseenter', function( e ) {
             e.preventDefault();
-            CurrentUI = current_ui;
             current_ui.border.setAttribute("stroke", "blue");
             console.log("mouse enter " + current_ui.text);
         }, false);
 
         this.border.addEventListener('mouseleave', function( e ) {
             e.preventDefault();
-            CurrentUI = null;
             current_ui.border.setAttribute("stroke", "red");
             console.log("mouse leave " + current_ui.text);
         }, false);
@@ -494,7 +539,7 @@ class TextUI extends ElementUI {
             return false;
         }, false);
 */
-        ctx.svg.appendChild(this.border);
+        ctx.group.appendChild(this.border);
     }
     
     draw(offset_x: number, offset_y: number){
@@ -530,7 +575,7 @@ class LineUI extends ElementUI {
     line      : SVGLineElement;
 
     constructor(tag, x1: number, y1: number, width: number, ctx : ContextUI){
-        super(tag);
+        super(tag, ctx);
 
         var t = ctx.currentTransform();
 
@@ -546,7 +591,7 @@ class LineUI extends ElementUI {
         this.line.setAttribute("stroke", "black");
         this.line.setAttribute("stroke-width", "1px");
 
-        ctx.svg.appendChild(this.line);
+        ctx.group.appendChild(this.line);
     }
     
     draw(offset_x: number, offset_y: number){

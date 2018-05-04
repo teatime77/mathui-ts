@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>数式処理</title>
-    <script type="text/javascript" src="./src/main.js?ver=107"></script>
+    <script type="text/javascript" src="./src/main.js?ver=121"></script>
     <script type="text/javascript">
     function BodyOnLoad(){
         var math_txt = document.getElementById("math-txt")
@@ -79,11 +79,14 @@
 
 </head>
 <body onload="BodyOnLoad()">
-    <div style="width:150px; height:200px; border:2px; overflow:scroll">
-        <svg id="svg-1" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" />
-    </div>
 
-    <svg id="svg-2" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="350" height="200" />
+    <svg id="svg-2" version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="350" height="200" style="background-color:cornsilk" />
+
+    <div id="svg-div" style="width:150px; height:200px; border:2px; overflow:scroll; background-color:cornsilk">
+        <svg version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewbox="0 0 1000 1000">
+            <g id="svg-1"></g>
+        </svg>
+    </div>
 
     <textarea cols="50" rows="5" id="math-txt">
         a;
