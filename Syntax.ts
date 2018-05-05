@@ -315,10 +315,9 @@ class Apply extends Term {
     makeSqrt(ctx : ContextUI) : ElementUI{
         var arg = this.args[0].makeUI(ctx);
 
-        var sym = ctx.makeText(this, "√", "STIX2-Math", new Transform(0, 0, 1, arg.height/16));
-//        ctx.pushTransform(0, 0, 1, arg.height/16);
-//        var sym = ctx.makeText(this, "√", "STIX2-Math");
-//        ctx.popTransform();
+        ctx.pushTransform(0, 0, 1, arg.height/16);
+        var sym = ctx.makeText(this, "√", "STIX2-Math");
+        ctx.popTransform();
         
         return new BlockUI(this, ctx, [ sym, new LineUI(this, 0, 0, 1, ctx), arg ]).layoutSqrt();
     }

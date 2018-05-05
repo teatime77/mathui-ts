@@ -134,10 +134,6 @@ class Transform {
         this.xscale  = xscale;
         this.yscale  = yscale;
     }
-
-    apply(t: Transform) : Transform {
-        return ;
-    }
 }
 
 
@@ -168,8 +164,8 @@ class ContextUI {
         this.transforms.pop();
     }
 
-    makeText(obj, str: string, font_family:string = "STIX2-Regular", transform: Transform = null){
-        return new TextUI(obj, str, this, 16, font_family, transform);
+    makeText(obj, str: string, font_family:string = "STIX2-Regular"){
+        return new TextUI(obj, str, this, 16, font_family);
     }
 
     draw(x: number, y:number){
@@ -465,28 +461,21 @@ class TextUI extends ElementUI {
     absX      : number = 0;
     absY      : number = 0;
 
-    constructor(tag, text: string, ctx : ContextUI, font_size: number, font_family: string, transform: Transform = null){
+    constructor(tag, text: string, ctx : ContextUI, font_size: number, font_family: string){
         super(tag, ctx);
 
-        var t = ctx.currentTransform();
+        var transform = ctx.currentTransform();
 
         this.text = text;
-        this.x = t.x;
-        this.y = t.y;
-
-        if(transform == null){
-            transform = t;
-        }
+        this.x = transform.x;
+        this.y = transform.y;
 
         this.transform = transform;
-
 
         this.textSVG = document.createElementNS("http://www.w3.org/2000/svg", "text");
         var textNode = document.createTextNode(text);
 
         this.textSVG.appendChild(textNode);
-
-
 
         this.textSVG.setAttribute("font-family", font_family);
         this.textSVG.setAttribute("font-size", "" + (font_size));//t.xscale * 
@@ -495,10 +484,6 @@ class TextUI extends ElementUI {
         this.textSVG["data-ui"] = this;
 
         ctx.group.appendChild(this.textSVG);
-
-//        this.textSVG.setAttribute("x", "0");
-//        this.textSVG.setAttribute("y", "0");
-//        this.textSVG.setAttribute("transform", `scale(${t.xscale},${t.yscale})`);
         
         var bbox = this.textSVG.getBBox();
 
@@ -508,14 +493,11 @@ class TextUI extends ElementUI {
         this.ascent  = - bbox.y;
         this.descent = this.height - this.ascent;
 
-        if(transform != null){
+        this.width   *= transform.xscale;
 
-            this.width   *= transform.xscale;
-
-            this.height  *= transform.yscale;
-            this.ascent  *= transform.yscale;
-            this.descent *= transform.yscale;
-        }
+        this.height  *= transform.yscale;
+        this.ascent  *= transform.yscale;
+        this.descent *= transform.yscale;
 
         this.border = document.createElementNS("http://www.w3.org/2000/svg", "rect");
 
@@ -577,7 +559,6 @@ class TextUI extends ElementUI {
             this.textSVG.setAttribute("y", "" + abs_y);
             this.border.setAttribute("y", "" + (abs_y - this.ascent));
         }
-
 
         if(this.transform != null){
 
