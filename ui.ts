@@ -122,13 +122,13 @@ function initDocument(){
 
 }
 
-class Transform {
-    xscale: number;
-    yscale: number;
+class Vec2 {
+    x: number;
+    y: number;
 
-    constructor(xscale: number, yscale: number){
-        this.xscale  = xscale;
-        this.yscale  = yscale;
+    constructor(x: number, y: number){
+        this.x  = x;
+        this.y  = y;
     }
 }
 
@@ -137,27 +137,26 @@ class ContextUI {
     rootGroup : SVGGElement;
     group : SVGGElement;
     rootUI: ElementUI;
-    transforms : Transform[] = [ new Transform(1, 1) ];
+    scales : Vec2[] = [ new Vec2(1, 1) ];
 
-    constructor(group : SVGGElement){
-        this.rootGroup = group;
+    constructor(root_group : SVGGElement, group: SVGGElement = root_group){
+        this.rootGroup = root_group;
         this.group    = group;
     }
 
-    currentTransform() : Transform {
-        return this.transforms[this.transforms.length-1];
+    currentScale() : Vec2 {
+        return this.scales[this.scales.length-1];
     }
 
-    pushTransform(xscale: number, yscale: number){
-        var t1 = this.currentTransform();
-        var t2 = new Transform(t1.xscale * xscale, t1.yscale * yscale);
-        this.transforms.push( t2 );
+    scale(xscale: number, yscale: number) : ContextUI{
+        var t1 = this.currentScale();
+        this.scales.push( new Vec2(t1.x * xscale, t1.y * yscale) );
 
-        return t2;
+        return this;
     }
 
-    popTransform(){
-        this.transforms.pop();
+    popScale(){
+        this.scales.pop();
     }
 
     makeText(obj, str: string, font_family:string = "STIX2-Regular"){
@@ -166,24 +165,6 @@ class ContextUI {
 
     draw(x: number, y:number){
         this.rootUI.draw(x, y);
-    }
-
-    sub(a: ElementUI){
-    }
-
-    sup(a: ElementUI){
-    }
-
-    subSup(a: ElementUI, b: ElementUI){
-    }
-
-    below(a: ElementUI){
-    }
-
-    above(a: ElementUI){
-    }
-
-    belowAbove(){
     }
 }
 
@@ -197,7 +178,7 @@ class ElementUI {
     height  : number;
     ascent  : number;
     descent : number;
-    transform: Transform = null;
+    scale: Vec2 = null;
 
     constructor(tag, ctx: ContextUI){
         this.context = ctx;
@@ -469,11 +450,9 @@ class TextUI extends ElementUI {
     constructor(tag, text: string, ctx : ContextUI, font_size: number, font_family: string){
         super(tag, ctx);
 
-        var transform = ctx.currentTransform();
-
         this.text = text;
 
-        this.transform = transform;
+        this.scale = ctx.currentScale();
 
         this.textSVG = document.createElementNS("http://www.w3.org/2000/svg", "text");
         var textNode = document.createTextNode(text);
@@ -481,7 +460,7 @@ class TextUI extends ElementUI {
         this.textSVG.appendChild(textNode);
 
         this.textSVG.setAttribute("font-family", font_family);
-        this.textSVG.setAttribute("font-size", "" + (font_size));//t.xscale * 
+        this.textSVG.setAttribute("font-size", "" + (font_size));//t.x * 
 //        this.textSVG.setAttribute("alignment-baseline", "baseline");//, "text-before-edge");//, "before-edge");
         this.textSVG.setAttribute("dominant-baseline", "mathematical");//, "text-before-edge");//"hanging");
         this.textSVG["data-ui"] = this;
@@ -496,11 +475,11 @@ class TextUI extends ElementUI {
         this.ascent  = - bbox.y;
         this.descent = this.height - this.ascent;
 
-        this.width   *= transform.xscale;
+        this.width   *= this.scale.x;
 
-        this.height  *= transform.yscale;
-        this.ascent  *= transform.yscale;
-        this.descent *= transform.yscale;
+        this.height  *= this.scale.y;
+        this.ascent  *= this.scale.y;
+        this.descent *= this.scale.y;
 
         this.border = document.createElementNS("http://www.w3.org/2000/svg", "rect");
 
@@ -563,9 +542,9 @@ class TextUI extends ElementUI {
             this.border.setAttribute("y", "" + (abs_y - this.ascent));
         }
 
-        if(this.transform != null){
+        if(this.scale != null){
 
-            var s = `translate(${abs_x}, ${abs_y}) scale(${this.transform.xscale},${this.transform.yscale}) translate(${-abs_x}, ${-abs_y})`;
+            var s = `translate(${abs_x}, ${abs_y}) scale(${this.scale.x},${this.scale.y}) translate(${-abs_x}, ${-abs_y})`;
             this.textSVG.setAttribute("transform", s);
         }
         
