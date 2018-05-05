@@ -206,26 +206,11 @@ class Reference extends Term {
             return ctx.makeText(this, this.name);
         }
 
-        var blc = new HorizontalBlock(this);
-
-        blc.add(ctx.makeText(this, this.name));
-
-        ctx.pushTransform(0, 5, 0.75, 0.75);
-        for(let idx of this.indexes){
-            if(idx != this.indexes[0]){
-                // 最初でない場合
-
-                var cm = ctx.makeText(this, ",");
-                blc.add(cm);
-            }
-
-            var idx_ui = idx.makeUI(ctx);
-            blc.add(idx_ui);
-        }
+        ctx.pushTransform(0.75, 0.75);
+        var idx_ui = (new HorizontalBlock(this, ctx, joinMath(",", this.indexes)).translate(0, 5) as HorizontalBlock).layoutHorizontal();
         ctx.popTransform();
 
-        blc.layoutHorizontal();
-        return blc;
+        return new HorizontalBlock(this, ctx, [this.name, idx_ui]).layoutHorizontal();
     }
 }
 
@@ -282,14 +267,12 @@ class Apply extends Term {
         sum(i, 0, N, p[i])
     */
     makeSum(ctx : ContextUI) : ElementUI{
-        ctx.pushTransform(0, 0, 0.5, 0.5);
+        ctx.pushTransform(0.5, 0.5);
         var sum_to   = this.args[2].makeUI(ctx);
         var sum_from = new HorizontalBlock(this, ctx, [this.args[0], "=", this.args[1]]).layoutHorizontal();
         ctx.popTransform();
 
-        var sum_head = new VerticalBlock(this, ctx, [ sum_to, "∑", sum_from ]);
-
-        sum_head.layoutBaseLine(1);
+        var sum_head = new VerticalBlock(this, ctx, [ sum_to, "∑", sum_from ]).layoutBaseLine(1);
 
         return new HorizontalBlock(this, ctx, [ sum_head, this.args[3] ]).layoutHorizontal();
     }
@@ -298,13 +281,12 @@ class Apply extends Term {
         int(i, 0, N, p[i])
     */
     makeIntegral(ctx : ContextUI) : ElementUI{
-        ctx.pushTransform(0, 0, 0.3, 0.3);
+        ctx.pushTransform(0.3, 0.3);
         var int_to   = this.args[2].makeUI(ctx);
         var int_from = this.args[1].makeUI(ctx);
         ctx.popTransform();
 
-        var int_head = new VerticalBlock(this, ctx, [ int_to, "∫", int_from ]);
-        int_head.layoutIntegral();
+        var int_head = new VerticalBlock(this, ctx, [ int_to, "∫", int_from ]).layoutIntegral();
 
         return new HorizontalBlock(this, ctx, [ int_head, this.args[3], "d", this.args[0] ]).layoutHorizontal();
     }
@@ -315,7 +297,7 @@ class Apply extends Term {
     makeSqrt(ctx : ContextUI) : ElementUI{
         var arg = this.args[0].makeUI(ctx);
 
-        ctx.pushTransform(0, 0, 1, arg.height/16);
+        ctx.pushTransform(1, arg.height/16);
         var sym = ctx.makeText(this, "√", "STIX2-Math");
         ctx.popTransform();
         

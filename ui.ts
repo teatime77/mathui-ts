@@ -123,14 +123,10 @@ function initDocument(){
 }
 
 class Transform {
-    x : number;
-    y : number;
     xscale: number;
     yscale: number;
 
-    constructor(x : number, y : number, xscale: number, yscale: number){
-        this.x  = x;
-        this.y  = y;
+    constructor(xscale: number, yscale: number){
         this.xscale  = xscale;
         this.yscale  = yscale;
     }
@@ -141,7 +137,7 @@ class ContextUI {
     rootGroup : SVGGElement;
     group : SVGGElement;
     rootUI: ElementUI;
-    transforms : Transform[] = [ new Transform(0, 0, 1, 1) ];
+    transforms : Transform[] = [ new Transform(1, 1) ];
 
     constructor(group : SVGGElement){
         this.rootGroup = group;
@@ -152,9 +148,9 @@ class ContextUI {
         return this.transforms[this.transforms.length-1];
     }
 
-    pushTransform(x : number, y : number, xscale: number, yscale: number){
+    pushTransform(xscale: number, yscale: number){
         var t1 = this.currentTransform();
-        var t2 = new Transform(t1.x + x, t1.y + y, t1.xscale * xscale, t1.yscale * yscale);
+        var t2 = new Transform(t1.xscale * xscale, t1.yscale * yscale);
         this.transforms.push( t2 );
 
         return t2;
@@ -272,6 +268,15 @@ class BlockUI extends ElementUI {
         for(let ui of this.children){
             ui.draw(offset_x + this.x, offset_y + this.y);
         }
+    }
+
+    translate(x: number, y: number) : BlockUI{
+        for(let ui of this.children){
+            ui.x = x;
+            ui.y = y;
+        }
+
+        return this;
     }
 
     layoutIntegral() : BlockUI{
@@ -467,8 +472,6 @@ class TextUI extends ElementUI {
         var transform = ctx.currentTransform();
 
         this.text = text;
-        this.x = transform.x;
-        this.y = transform.y;
 
         this.transform = transform;
 
@@ -577,11 +580,6 @@ class LineUI extends ElementUI {
 
     constructor(tag, x1: number, y1: number, width: number, ctx : ContextUI){
         super(tag, ctx);
-
-        var t = ctx.currentTransform();
-
-        this.x = t.x;
-        this.y = t.y;
 
         this.width   = width;
         this.height  = 4;
