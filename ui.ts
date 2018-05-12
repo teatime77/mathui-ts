@@ -80,13 +80,6 @@ function initDocument(){
             var ui: ElementUI = e.target["data-ui"];
             var ctx = ui.context;
 
-            if(ctx.group != ctx.rootGroup){
-
-                ctx.rootGroup.removeChild(ctx.group);
-            }
-            ctx.group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            ctx.rootGroup.appendChild(ctx.group);
-
             var bbox = ui.border.getBBox();
 
             var rc = document.getElementById("svg-div").getBoundingClientRect();            
@@ -161,13 +154,11 @@ class Vec2 {
 
 
 class ContextUI {
-    rootGroup : SVGGElement;
     group : SVGGElement;
     rootUI: ElementUI;
     scales : Vec2[] = [ new Vec2(1, 1) ];
 
-    constructor(root_group : SVGGElement, group: SVGGElement = root_group){
-        this.rootGroup = root_group;
+    constructor(group : SVGGElement){
         this.group    = group;
     }
 
