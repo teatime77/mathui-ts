@@ -2,6 +2,14 @@ var C_5 = 0.5;
 var CurrentUI : ElementUI = null;
 type MathComponent = string | Term | Statement | Variable | Class | ElementUI;
 
+enum LayoutType {
+    integral,
+    sqrt,
+    horizontal,
+    vertical,
+    baseLine,
+}
+
 function joinMath(joint: MathComponent, args: MathComponent[]) : MathComponent[]{
     var v = [];
 
@@ -46,7 +54,7 @@ function initDocument(){
         if(CurrentUI != null){
 
             var rc = document.getElementById("svg-div").getBoundingClientRect();            
-            CurrentUI.draw(e.clientX - rc.left, e.clientY - rc.top);            
+            CurrentUI.draw(10 + e.clientX - rc.left, 10 + e.clientY - rc.top);            
         }
         if(e.target instanceof Element && e.target["data-ui"]){
 
@@ -59,7 +67,7 @@ function initDocument(){
             var bbox = ui.border.getBBox();
             var x = ui.border.getAttribute("x");
             var y = ui.border.getAttribute("y");
-            console.log(`doc mouse move client:(${e.clientX} ${e.clientY}) div:(${bcr.left} ${bcr.top}) client-div:(${e.clientX - bcr.left} ${e.clientY - bcr.top}) box:(${bbox.x} ${bbox.y}) attr:(${x} ${y})` + e.target);
+//            console.log(`doc mouse move client:(${e.clientX} ${e.clientY}) div:(${bcr.left} ${bcr.top}) client-div:(${e.clientX - bcr.left} ${e.clientY - bcr.top}) box:(${bbox.x} ${bbox.y}) attr:(${x} ${y})` + e.target);
         }
     }, false);
 
@@ -94,7 +102,7 @@ function initDocument(){
             }
             if(CurrentUI != null){
 
-                CurrentUI.draw(e.clientX - rc.left, e.clientY - rc.top);
+                CurrentUI.draw(10 + e.clientX - rc.left, 10 + e.clientY - rc.top);
             }
 
             console.log("mouse down " + e.target["data-ui"].text);
@@ -103,11 +111,30 @@ function initDocument(){
     }, false);
 
     document.addEventListener('mouseup', function( e ) {
-        if(e.target instanceof Element && e.target["data-ui"]){
+        if(CurrentUI != null){
             
             e.preventDefault();
+
+            if(e.target["data-ui"]){
+                var ui_target = e.target["data-ui"] as ElementUI;
+
+                if(ui_target.tag instanceof Reference && CurrentUI.tag instanceof Term){
+
+                    var ref_target = ui_target.tag;
+                    (ref_target.parent as Term).replace(ref_target, CurrentUI.tag);
+
+                    ui_target.parentUI.replaceUI(ui_target, CurrentUI);
+
+                    for(var ui_blc = ui_target.parentUI; ui_blc; ui_blc = ui_blc.parentUI){
+                        ui_blc.layout();
+                    }
+
+                    ui_target.context.draw(10, 0);
+                }
+            }
+
             CurrentUI = null;
-            console.log("mouse up " + e.target["data-ui"].text);
+            console.log("mouse up " + (e.target["data-ui"] ? e.target["data-ui"].text : ""));
             return false;
         }
     }, false);
@@ -169,6 +196,7 @@ class ContextUI {
 }
 
 class ElementUI {
+    parentUI : BlockUI;
     context : ContextUI;
     border  : SVGRectElement;
     tag;
@@ -192,9 +220,14 @@ class ElementUI {
     
     draw(offset_x: number, offset_y: number){
     }
+
+    removeSVG(){        
+    }
 }
 
 class BlockUI extends ElementUI {
+    layoutType : LayoutType;
+    baseIdx    : number;
     children : ElementUI[] = new Array<ElementUI>();
 
     constructor(tag, ctx: ContextUI = null, args: MathComponent[] = null){
@@ -231,6 +264,22 @@ class BlockUI extends ElementUI {
         }
     }
 
+    replaceUI(old_ui: ElementUI, new_ui: ElementUI){
+        var i = this.children.indexOf(old_ui);
+        console.assert(i != -1);
+
+        this.children[i] = new_ui;
+        new_ui.parentUI = this;
+        
+        old_ui.removeSVG();
+    }
+
+    removeSVG(){        
+        for(let ui of this.children){
+            ui.removeSVG();
+        }
+    }
+
     lastUI() : ElementUI {
         if(this.children.length == 0){
             return null;
@@ -243,6 +292,7 @@ class BlockUI extends ElementUI {
     add(ui: ElementUI){
         console.assert(ui != undefined && ui != null);
         this.children.push(ui);
+        ui.parentUI = this;
     }
     
     draw(offset_x: number, offset_y: number){
@@ -260,7 +310,42 @@ class BlockUI extends ElementUI {
         return this;
     }
 
+    layout(){
+        switch(this.layoutType){
+        case LayoutType.integral:
+            this.layoutIntegral();
+            break;
+        case LayoutType.sqrt:
+            this.layoutSqrt();
+            break;
+        
+        default:
+            if(this instanceof HorizontalBlock){
+                this.layoutHorizontal();
+            }
+            else if(this instanceof VerticalBlock){
+                switch(this.layoutType){
+                case LayoutType.vertical:
+                    this.layoutVertical();
+                    break;
+                case LayoutType.baseLine:
+                    this.layoutBaseLine(this.baseIdx);
+                    break;
+                default:
+                    console.assert(false);
+                    break;
+                }
+            }
+            else{
+                console.assert(false);
+            }
+            break;
+        }
+    }
+
     layoutIntegral() : BlockUI{
+        this.layoutType = LayoutType.integral;
+
         var ui0 = this.children[0];
         var ui1 = this.children[1];
         var ui2 = this.children[2];
@@ -286,6 +371,8 @@ class BlockUI extends ElementUI {
     }
 
     layoutSqrt() : BlockUI {
+        this.layoutType = LayoutType.sqrt;
+
         var sym = this.children[0];
         var line = this.children[1];
         var arg = this.children[2];
@@ -318,6 +405,8 @@ class HorizontalBlock extends BlockUI {
     }
 
     layoutHorizontal() : HorizontalBlock{
+        this.layoutType = LayoutType.horizontal;
+
         var x = 0;
         var max_ascent  = 0;
         var max_descent = 0;
@@ -364,6 +453,8 @@ class VerticalBlock extends BlockUI {
     }
 
     layoutVertical() : VerticalBlock {
+        this.layoutType = LayoutType.vertical;
+
         var x = 0;
         var y;
         var max_w = 0;
@@ -394,6 +485,9 @@ class VerticalBlock extends BlockUI {
     }
 
     layoutBaseLine(base_idx: number) : VerticalBlock{
+        this.layoutType = LayoutType.baseLine;
+        this.baseIdx    = base_idx;
+
         var x = 0;
         var y;
 
@@ -426,6 +520,10 @@ class VerticalBlock extends BlockUI {
 
                 ui.x = 0;
                 ui.width = max_w;
+
+                // 再drawのためにリセット
+                ui.absX = undefined;
+                ui.absY = undefined;
             }
             else{
 
@@ -549,6 +647,12 @@ class TextUI extends ElementUI {
         }
         
     }
+
+    removeSVG(){        
+        this.textSVG.parentElement.removeChild(this.textSVG);
+        this.border.parentElement.removeChild(this.border);
+    }
+    
 }
 
 
@@ -585,5 +689,9 @@ class LineUI extends ElementUI {
             this.line.setAttribute("x2", "" + (abs_x + this.width) + "px");
             this.line.setAttribute("y2", "" + abs_y + "px");
         }
+    }
+
+    removeSVG(){
+        this.line.parentElement.removeChild(this.line);
     }
 }

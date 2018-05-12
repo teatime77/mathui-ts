@@ -109,12 +109,17 @@ class Term extends Statement {
     // 項の型
     typeTerm : Class;
 
+    uiTerm  : ElementUI;
+
     eq(t: Term) : boolean{
         return false;
     }
 
     clone(var_tbl): Term {
         return null;
+    }
+
+    replace(old_term: Term, new_term: Term){
     }
 }
 
@@ -138,7 +143,10 @@ class Constant extends Term {
     }
 
     makeUI(ctx : ContextUI) : ElementUI {
-        return ctx.makeText(this, "" + this.value);
+        var ui = ctx.makeText(this, "" + this.value);
+        this.uiTerm = ui;
+
+        return ui;
     }
 }
 
@@ -201,16 +209,40 @@ class Reference extends Term {
         return new Reference(v.name, v, null);
     }
 
-    makeUI(ctx : ContextUI) : ElementUI {
-        if (this.indexes == null){
-            return ctx.makeText(this, this.name);
+    replace(old_term: Term, new_term: Term){
+        if(this.indexes != null){
+            var i = this.indexes.indexOf(old_term);
+            if(i != -1){
+
+                this.indexes[i] = new_term;
+                new_term.parent = this;
+                return;
+            }
         }
 
-        ctx.scale(0.75, 0.75);
-        var idx_ui = (new HorizontalBlock(this, ctx, joinMath(",", this.indexes)).translate(0, 5) as HorizontalBlock).layoutHorizontal();
-        ctx.popScale();
+        console.assert(false);
+    }
+    
 
-        return new HorizontalBlock(this, ctx, [this.name, idx_ui]).layoutHorizontal();
+    makeUI(ctx : ContextUI) : ElementUI {
+        var ui_ref;
+
+        if (this.indexes == null){
+            ui_ref = ctx.makeText(this, this.name);
+        }
+        else{
+
+
+            ctx.scale(0.75, 0.75);
+            var idx_ui = (new HorizontalBlock(this, ctx, joinMath(",", this.indexes)).translate(0, 5) as HorizontalBlock).layoutHorizontal();
+            ctx.popScale();
+
+            ui_ref = new HorizontalBlock(this, ctx, [this.name, idx_ui]).layoutHorizontal();
+        }
+
+        this.uiTerm = ui_ref;
+
+        return ui_ref;
     }
 }
 
@@ -246,6 +278,24 @@ class Apply extends Term {
         app.typeTerm = this.typeTerm;
 
         return app;
+    }
+
+    replace(old_term: Term, new_term: Term){
+        if(old_term == this.functionApp){
+            this.functionApp = new_term as Reference;
+        }
+        else{
+
+            var i = this.args.indexOf(old_term);
+            if(i != -1){
+
+                this.args[i] = new_term;
+                new_term.parent = this;
+                return;
+            }
+
+            console.assert(false);
+        }
     }
 
     isIntegral(){
@@ -305,28 +355,35 @@ class Apply extends Term {
     }
 
     makeUI(ctx : ContextUI) : ElementUI{
+        var ui_app;
+
         if(this.functionApp.name == "sum"){
-            return this.makeSum(ctx);
+            ui_app = this.makeSum(ctx);
         }
         else if(this.functionApp.name == "/"){
-            return this.makeDiv(ctx);
+            ui_app = this.makeDiv(ctx);
         }
         else if(this.isIntegral()){
-            return this.makeIntegral(ctx);
+            ui_app = this.makeIntegral(ctx);
         }
         else if(this.isSqrt()){
-            return this.makeSqrt(ctx);
-        }
-
-        var op: string;
-        if(this.functionApp.name == "*"){
-            op = "⋅";
+            ui_app = this.makeSqrt(ctx);
         }
         else{
-            op = this.functionApp.name;
+
+            var op: string;
+            if(this.functionApp.name == "*"){
+                op = "⋅";
+            }
+            else{
+                op = this.functionApp.name;
+            }
+
+            ui_app = new HorizontalBlock(this, ctx, joinMath(op, this.args)).layoutHorizontal();
         }
 
-        return new HorizontalBlock(this, ctx, joinMath(op, this.args)).layoutHorizontal();
+        this.uiTerm = ui_app;
+        return ui_app;
     }
 }
 
