@@ -1,6 +1,7 @@
 var C_5 = 0.5;
 var CurrentUI : ElementUI = null;
 type MathComponent = string | Term | Statement | Variable | Class | ElementUI;
+var editMenu : HTMLDivElement;
 
 enum LayoutType {
     integral,
@@ -24,6 +25,7 @@ function joinMath(joint: MathComponent, args: MathComponent[]) : MathComponent[]
 }
 
 function initDocument(){
+    editMenu = document.getElementById("edit-menu") as HTMLDivElement;
     
     document.addEventListener('mouseenter', function( e ) {
         console.log("doc mouse enter ");
@@ -112,6 +114,10 @@ function initDocument(){
                 var ui_target = e.target["data-ui"] as ElementUI;
 
                 if(ui_target.tag instanceof Reference && CurrentUI.tag instanceof Term){
+
+                    editMenu.style.display = "flex";
+                    editMenu.style.left = e.pageX + "px";
+                    editMenu.style.top  = e.pageY + "px";
 
                     var ref_target = ui_target.tag;
                     (ref_target.parent as Term).replace(ref_target, CurrentUI.tag);

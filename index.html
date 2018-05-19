@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>数式処理</title>
-    <script type="text/javascript" src="./src/main.js?ver=175"></script>
+    <script type="text/javascript" src="./src/main.js?ver=179"></script>
     <script type="text/javascript">
     function BodyOnLoad(){
         var math_txt = document.getElementById("math-txt")
@@ -103,5 +103,13 @@
         abc + p[i,j] * 2;
         abcdefghijkl;            
     </textarea>    
+
+    <div id="edit-menu" style="position:absolute; left:200px; top:300px; display:none; flex-direction:column; padding:0px">
+        <button>切り取り</button>
+        <button>代入</button>
+        <button>コピー</button>
+    </div>
+
+
 </body>
 </html>
