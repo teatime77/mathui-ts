@@ -48,6 +48,7 @@ class Parser {
             throw new SyntaxException();
         }
 
+        //console.log(text);
         return this.readNextToken();
     }
 
@@ -246,7 +247,20 @@ class Parser {
         }
     }
 
+    powerExpression() : Term {
+        var t1 : Term = this.primaryExpression();
 
+        if (this.currentToken.text == "^") {
+
+            this.getToken("^");
+            
+            var t2 : Term = this.primaryExpression();
+
+            t1 = new Apply(Reference.FromVariable(PowFnc), [t1, t2]);
+        }
+
+        return t1;
+    }
 
         /*
             単項式を読みます。
@@ -258,7 +272,7 @@ class Parser {
             this.getToken("-");
 
             // 基本の式を読みます。
-            var t1 : Term = this.primaryExpression();
+            var t1 : Term = this.powerExpression();
 
             // 符号を反転します。
             t1.value *= -1;
@@ -268,7 +282,7 @@ class Parser {
         else {
 
             // 基本の式を読みます。
-            return this.primaryExpression();
+            return this.powerExpression();
         }
     }
 
@@ -350,15 +364,52 @@ class Parser {
 
         return t1;
     }
+    
+    relationalExpression(){
+        // 加算/減算の式を読みます。
+        var t1 : Term = this.additiveExpression();
+
+        switch(this.currentToken.text){
+        case "=":
+        case "!=":
+        case "<":
+        case "<=":
+        case ">":
+        case ">=":
+            // 現在の演算子を保存します。
+            var opr : string = this.currentToken.text;
+
+            var opr_var = { "=":EqRel , "!=":NeRel , "<":LtRel, "<=":LeRel, ">":GtRel , ">=":GeRel }[opr];
+
+            var args : Term[] = new Array<Term>();
+            args.push(t1);
+
+            while (this.currentToken.text == opr) {
+                // 現在のトークンが保存した演算子と同じ場合
+
+                this.getToken(opr);
+    
+                // 加算/減算の式を読みます。
+                args.push(this.additiveExpression());
+            }    
+
+            // 加算の関数適用を作ります。
+            t1 = new Apply(Reference.FromVariable(opr_var), args);
+            break;
+        }
+
+        return t1;
+    }
 
     readExpression() : Term {
-        return this.additiveExpression();
+        return this.relationalExpression();
     }
 
     readPredicate() : Term {
         var trm : Term = this.readExpression();
         this.getToken(";");
 
+        trm.setParenthesis();
         return trm;
     }
 

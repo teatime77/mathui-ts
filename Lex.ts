@@ -14,7 +14,7 @@ class Token{
     charPos:number;
 
     public constructor(type : TokenType, sub_type : TokenSubType, text : string, line_index : number, char_pos : number){
-        console.log("" + TokenType[type] + " " + TokenSubType[sub_type] + " " + text + " " + char_pos);
+        //console.log("" + TokenType[type] + " " + TokenSubType[sub_type] + " " + text + " " + char_pos);
         this.typeTkn = type;
         this.subType = sub_type;
         this.text = text;

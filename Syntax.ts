@@ -1,3 +1,55 @@
+function format(str: string, ...args){
+    var ret = str;
+
+    if(Array.isArray(args) && args.length == 1 && Array.isArray(args[0])){
+        args = args[0];
+    }
+    for(let [idx, val] of args.entries()){
+        ret = ret.replace("$"+(idx+1), val);
+    }
+
+    return ret;
+}
+
+function toTexName(name : string){
+    var v = [ 
+        "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", 
+        "iota", "kappa", "lambda", "mu", "nu", "xi", "pi", "rho", 
+        "sigma", "tau", "phi", "chi", "psi", "omega"
+    ]
+
+    var k = name.indexOf("__");
+    var name1;
+    if(k != -1){
+        name1 = name.substring(0, k);
+    }
+    else{
+        name1 = name;
+    }
+
+    var name1_low = name1[0].toLowerCase() + name1.substring(1);
+    if(v.indexOf(name1_low) != -1){
+
+        name1 = "\\" + name1;
+    }
+
+    if(k != -1){
+
+        var mark = name.substring(k + 2);
+        if(mark == "ast"){
+
+            return format("{$1^\\ast}", name1);
+        }
+        else{
+
+            return format("\\$2{$1}", name1, mark);
+        }
+    }
+    else{
+        return name1;
+    }
+}
+
 class Variable {
     // 親
     parentVar : object;
@@ -41,6 +93,10 @@ class Variable {
     makeUI(ctx : ContextUI) : ElementUI{
         return new HorizontalBlock(this, ctx, [ this.name, "∈", this.typeVar ]).layoutHorizontal();
     }
+
+    tex(){
+        return toTexName(this.name) + " \\in " + this.typeVar.tex();
+    }
 }
 
 /*
@@ -71,6 +127,10 @@ class Class {
     makeUI(ctx : ContextUI) : ElementUI {
         return ctx.makeText(this, this.name);
     }
+
+    tex(){
+        return this.name;
+    }
 }
 
 var IntClass : Class = new Class("int");
@@ -78,6 +138,15 @@ var RealClass : Class = new Class("real");
 var AddFnc : Func = new Func("+", null)
 var MulFnc : Func = new Func("*", null)
 var DivFnc : Func = new Func("/", null)
+var PowFnc : Func = new Func("^", null)
+var EqRel : Func = new Func("=", null)
+var NeRel : Func = new Func("!=", null)
+var GtRel : Func = new Func(">", null)
+var GeRel : Func = new Func(">=", null)
+var LtRel : Func = new Func("<", null)
+var LeRel : Func = new Func("<=", null)
+
+
 
 /*
     配列の型
@@ -121,6 +190,27 @@ class Term extends Statement {
 
     replace(old_term: Term, new_term: Term){
     }
+
+    setParenthesis(){
+    }
+
+    texSub(){
+        console.assert(false);
+    }
+
+    tex(){
+        var s = this.texSub();
+
+        if(this.value == 1){
+            return s;
+        }
+        else if(this.value == -1){
+            return "- " + s;
+        }
+        else{
+            return format("$1 \\cdot $2", "" + this.value, s);
+        }
+    }
 }
 
 /*
@@ -147,6 +237,10 @@ class Constant extends Term {
         this.uiTerm = ui;
 
         return ui;
+    }
+
+    tex(){
+        return "" + this.value;
     }
 }
 
@@ -244,6 +338,17 @@ class Reference extends Term {
 
         return ui_ref;
     }
+
+    texSub(){
+        var tex_name = toTexName(this.name);
+
+        if (this.indexes != null){
+            var texs = this.indexes.map(x => x.tex());
+
+            return format("$1_{$2}", tex_name, texs.join(","));
+        }
+        return tex_name;
+    }
 }
 
 /*
@@ -256,6 +361,8 @@ class Apply extends Term {
     // 引数
     args : Term[];
 
+    withParenthesis : boolean = false;
+    
     constructor(fnc : Reference, args : Term[]) {
         super();
         this.functionApp = fnc;
@@ -385,6 +492,114 @@ class Apply extends Term {
         this.uiTerm = ui_app;
         return ui_app;
     }
+
+    getPrecedence(){
+        switch(this.functionApp.name){
+        case "*":
+        case "/":
+            return 1;
+        case "+":
+        case "-":
+            return 2;
+        case "=":
+        case "!=":
+        case "<":
+        case "<=":
+        case ">":
+        case ">=":
+            return 3;
+        default:
+            return 0;
+        }
+    }
+
+    setParenthesis(){
+        if(this.parent instanceof Apply && this.parent.getPrecedence() <= this.getPrecedence()){
+            this.withParenthesis = true;
+        }
+        else{
+            this.withParenthesis = false;
+        }
+    }
+
+    texSub2(){
+        var texs = this.args.map(x => x.tex());
+
+        switch(this.functionApp.name){
+        case "sum":
+            return format("\\sum_{$1=$2}^{$3} $4", texs);
+        case "^":
+            var arg1 = this.args[0];
+            if(arg1 instanceof Apply){
+                switch(arg1.functionApp.name){
+                case "*":
+                case "/":
+                case "+":
+                case "-":
+                    return format("($1)^{$2}", texs);                                
+                }
+            }
+            return format("$1^{$2}", texs);
+        case "sqrt":
+            return format("\\sqrt{$1}", texs);
+        case "norm":
+            return format("\\| $1 \\|", texs);
+        case "*":
+        case "=":
+        case "!=":
+        case "<":
+        case "<=":
+        case ">":
+        case ">=":
+            var opr = { "*":"\\cdot", "=":"=" , "!=":"\\neq" , "<":"\\lt", "<=":"\\leqq", ">":"\\gt" , ">=":"\\geqq" }[this.functionApp.name];
+            return texs.join(" " + opr + " ");
+        case "+":
+            var s = "";
+            for(let [idx, arg] of this.args.entries()){
+                if(0 < idx && 0 <= arg.value){
+                    s += " + ";
+                }
+                s += texs[idx];
+            }
+            return s;
+        case "/":
+            return format("\\frac{$1}{$2}", texs);
+        default:
+            return format("$1($2)", this.functionApp.tex(), texs.join(","));
+        }
+    
+/*
+        else if(this.functionApp.name == "/"){
+            return this.texDiv();
+        }
+        else if(this.isIntegral()){
+            return this.texIntegral();
+        }
+        else if(this.isSqrt()){
+            return this.texSqrt();
+        }
+        else{
+
+            var op: string;
+            else{
+                op = this.functionApp.name;
+            }
+
+            ui_app = new HorizontalBlock(this, ctx, joinMath(op, this.args)).layoutHorizontal();
+        }
+*/
+    }
+
+    texSub(){
+        var s = this.texSub2();
+
+        if(this.withParenthesis){
+            return "(" + s + ")";
+        }
+        else{
+            return s;
+        }
+    }
 }
 
 /*
@@ -409,6 +624,10 @@ class VariableDeclaration extends Statement {
 
     makeUI(ctx : ContextUI){
         return new HorizontalBlock(this, ctx, joinMath(",", this.variables)).layoutHorizontal();
+    }
+
+    tex(){
+        return this.variables.map(x => x.tex()).join(",");
     }
 }
 

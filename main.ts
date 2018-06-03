@@ -1,16 +1,4 @@
 
-class Hello
-{
-    public Show()
-    {
-        console.log("Hello!!");
-    }
-
-    public getLex(){
-        return new Lex();
-    }
-}
-
 function isWhiteSpace(c:string) : boolean {
     return c == ' ' || c == '\t' || c == '\r' || c == '\n';
 }
@@ -47,6 +35,7 @@ var SymbolTable : Array<string> = new  Array<string> (
     "-",
     "*",
     "/",
+    "^",
     "%",
     "=",
     ":",
@@ -114,6 +103,3 @@ enum TokenType{
     // 不正
     illegal
 }
-
-var hello:Hello = new Hello();
-hello.Show();

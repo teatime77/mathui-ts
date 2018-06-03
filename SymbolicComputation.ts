@@ -212,22 +212,25 @@ class SymbolicComputation {
         return null;
     }
 
-    TraverseRep(term: Term, fnc){
-        if(term instanceof Reference){
+    TraverseRep(obj, fnc, ...args){
+        if(obj == null){
+            return null;
+        }
+        if(obj instanceof Reference){
             
-            var ret = fnc(term);
+            var ret = fnc(obj, args);
             if(ret != undefined){
 
                 return ret;
             }
         }
-        else if(term instanceof Apply){
-            term.args.forEach((arg, index) => {
+        else if(obj instanceof Apply){
+            obj.args.forEach((arg, index) => {
 
-                var ret = fnc(arg);
+                var ret = fnc(arg, args);
                 if(ret != undefined){
 
-                    term.args[index] = ret;
+                    obj.args[index] = ret;
                 }
             });
         }
@@ -251,7 +254,7 @@ class SymbolicComputation {
             return undefined;
         }
 
-        this.TraverseRep(t1, fnc);
+        this.TraverseRep(t1, fnc, subst_tbl, var_tbl);
     }
     
 
