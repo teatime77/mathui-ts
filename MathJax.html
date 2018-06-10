@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="utf-8">
-    <title>数式処理 - MathJax</title>
+    <title>MathJax - 数式処理</title>
     <script type="text/x-mathjax-config">
         MathJax.Hub.Config({
           extensions: ["tex2jax.js"],
@@ -10,120 +10,101 @@
           tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
         });
     </script>
+    <script src="https://www.promisejs.org/polyfills/promise-7.0.4.min.js"></script>
+    <script data-main="./src/main" src="require.js"></script>
+
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
-    <script type="text/javascript" src="./src/main.js?ver=205"></script>
+    <script type="text/javascript" src="./src/main.js?ver=206"></script>
     <script type="text/javascript">
     var timerId;
-    var testIdx = 0;
 
-    function InputMath(){
-        var math_txt = document.getElementById("math-txt")
+    function element(id){
+        return document.getElementById(id);
+    }
+
+    function makeDiv(inner_text){
+        var div = document.createElement("div");
+        div.innerText = inner_text;
+        document.body.appendChild(div);
+
+        return div;
+    }
+
+    function hr(){
+        document.body.appendChild(document.createElement("hr"));
+    }
+
+    function* generator(){
+        var div1 = makeDiv( "$$\r\n" + element("tex-txt").value + "\r\n$$" );
+        hr();
+
+        yield;
+
+        MathJax.Hub.Queue(["Typeset", MathJax.Hub, div1]);
+
+        yield;
 
         var lex = new Lex();
-        var token_list = lex.lexicalAnalysis(math_txt.value);
-
         var parser = new Parser();
-        parser.parse(token_list);
 
-        var inp_txt = document.getElementById("inp-txt")
-        var out_div = document.getElementById("out-math2")
-        out_div.innerText = "$$\r\n" + inp_txt.value + "\r\n$$";
-    }
+        var token_list = lex.lexicalAnalysis( element("math-txt").value );
+        
+        var stmt_list = parser.parse(token_list);
 
-    function MakeMath(id){
-        MathJax.Hub.Queue(["Typeset", MathJax.Hub, id]);
-    }
+        var div2 = makeDiv( "$$\r\n" + stmt_list.map(x => x.tex()).join("\n\\\\\n") + "\r\n$$" );
+        hr();
 
-    function makeText(){
-        var math_txt = document.getElementById("math-txt")
+        yield;
 
-        var lex = new Lex();
-        var token_list = lex.lexicalAnalysis(math_txt.value);
+        MathJax.Hub.Queue(["Typeset", MathJax.Hub, div2]);
 
-        var parser = new Parser();
-        var stmt_list = parser.parse(token_list);          
+        yield;
 
-        var out_math = document.getElementById("out-math")
-        out_math.innerText = "$$\r\n" + stmt_list.map(x => x.tex()).join("\n\\\\\n") + "\r\n$$";
-    }
-
-    function test(){
-        switch(testIdx){
-        case 0:
-            InputMath();
-            break;
-        case 1:
-            MakeMath("out-math2");
-            break;
-        case 2:
-            makeText();
-            break;
-        case 3:
-            MakeMath("out-math");
-            break;
-        default:
-            clearInterval(timerId);
-            break;
-        }
-
-        testIdx++;
-    }
+        clearInterval(timerId);
+    }  
 
     function BodyOnLoad(){
-        timerId = setInterval(test, 1000);
+        var iterator = generator();
+
+        timerId = setInterval(function timer(){
+                iterator.next();
+            }, 
+            1000
+        );
     }
     </script>    
 </head>
 <body onload="BodyOnLoad()">
 
-    <!-- javascriptの読み込み -->
-    <script src="https://www.promisejs.org/polyfills/promise-7.0.4.min.js"></script>
+<textarea cols="80" rows="6" id="tex-txt">
+δu_{i} = δy_{i} \cdot σ'(u_{i}) \\
+δx_{i_j} = \displaystyle \sum_{i }^{ Y } δu_{i} \cdot w_{i}^{j} \\
+δw_{i}^{j} = δu_{i} \cdot x_{i_j} \\
+δb_{i} = δu_{i} \\
+\sqrt x \\
+\sqrt \frac{x}{\frac{y}{z}}                    
+</textarea>
+<br/>
 
-    <script data-main="./src/main" src="require.js"></script>
+<textarea cols="80" rows="5" id="math-txt">
+var a : int;
+var b : int;
 
-    <textarea cols="50" rows="5" id="math-txt">
-        var a : int;
-        var b : int;
-        y(x, w) = sum(j, 0, M, w[j] * x^j);
-        (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2);
-        E[RMS] = sqrt((2 * E(w__ast))/N);
-        E__tilde(w) = (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2) + (lambda/2) * norm(w)^2;
-    </textarea>
-    <!-- a + b * 2; -->
-    <textarea cols="50" rows="5" id="inp-txt">
-            δu_{i} = δy_{i} \cdot σ'(u_{i})
-    </textarea>
-    <br/>
-    <div id="out-math"></div>
-    <hr/>
-    <div id="out-math2"></div>
-    <hr/>
+a;
+sqrt(x/y) * int(x, (a*b)/(a+b), N, 2 * sqrt(x/y));
+a / (b + c);
+sum(i, 0, N, p[i]);
+p[i[j]];
+var aij : int, B: int;
+a + p[i[j]] * 2;
+abc + p[i,j] * 2;
+abcdefghijkl;            
 
-    $$
-    δu_{i} = δy_{i} \cdot σ'(u_{i})
-    \\
-    δx_{i_j} = \displaystyle \sum_{i }^{ Y } δu_{i} \cdot w_{i}^{j}
-    \\
-    δw_{i}^{j} = δu_{i} \cdot x_{i_j}
-    \\
-    δb_{i} = δu_{i}
-    \\
-    \sqrt x
-    \\
-    \sqrt \frac{x}{\frac{y}{z}}
-    $$
-    
-    <textarea cols="50" rows="5" id="math-txt">
-        a;
-        sqrt(x/y) * int(x, (a*b)/(a+b), N, 2 * sqrt(x/y));
-        a / (b + c);
-        sum(i, 0, N, p[i]);
-        p[i[j]];
-        var aij : int, B: int;
-        a + p[i[j]] * 2;
-        abc + p[i,j] * 2;
-        abcdefghijkl;            
-    </textarea>    
+y(x, w) = sum(j, 0, M, w[j] * x^j);
+(1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2);
+E[RMS] = sqrt((2 * E(w__ast))/N);
+E__tilde(w) = (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2) + (lambda/2) * norm(w)^2;
+</textarea>
     
 </body>
 </html>

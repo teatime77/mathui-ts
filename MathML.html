@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>MathML - 数式処理</title>
+    <script src="https://www.promisejs.org/polyfills/promise-7.0.4.min.js"></script>
+    <script data-main="./src/main" src="require.js"></script>
+
+    <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/javascript" src="./src/main.js?ver=206"></script>
+    <script type="text/javascript">
+
+    function element(id){
+        return document.getElementById(id);
+    }
+
+    function makeDiv(inner_text){
+        var div = document.createElement("div");
+        div.innerText = inner_text;
+        document.body.appendChild(div);
+
+        return div;
+    }
+
+    function makeMath(tag){
+        return document.createElementNS("http://www.w3.org/1998/Math/MathML", tag);
+    }
+
+    function mmlDiv(s){
+        var m = makeMath("math");
+        m.innerHTML = s;
+
+        var div = document.createElement("div");
+        div.appendChild(m);
+        document.body.appendChild(div);
+
+        return div;
+    }
+
+    function hr(){
+        document.body.appendChild(document.createElement("hr"));
+    }
+
+    function* generator(){
+        var src = mmlDiv(element("src-txt").value);
+        hr();
+
+        yield;
+
+        MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
+        yield;
+
+        var dst = mmlDiv(element("dst-txt").value);
+        hr();
+
+        yield;
+
+        MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
+
+        var typeset_done = false;
+        MathJax.Hub.Queue(function(){
+            typeset_done = true;
+        });
+        while(! typeset_done){
+            yield;
+        }
+        console.log("typeset done");
+
+        var x1 = element("x1");
+        var rc1 = x1.getBoundingClientRect();
+
+        var div = src.cloneNode(true);
+        div.style.position = "absolute";
+        document.body.appendChild(div);
+        var rc2 = div.getBoundingClientRect();
+
+        var sc = Math.max(rc1.width / rc2.width, rc1.height / rc2.height);
+
+        // 移動先の中心
+        var cx1 = rc1.x + rc1.width / 2;
+        var cy1 = rc1.y + rc1.height / 2;
+
+        // 移動元の中心
+        var cx2 = rc2.x + rc2.width / 2;
+        var cy2 = rc2.y + rc2.height / 2;
+
+        // 移動元のサイズ
+        var w2 = rc2.width;
+        var h2 = rc2.height;
+
+        // 平行移動の差分
+        var dx = (cx1 - cx2) / 100;
+        var dy = (cy1 - cy2) / 100;
+
+        // サイズ変更の差分
+        var ds = (sc - 1) / 100;
+
+        pushInterval(20);
+        for(var i = 0; i < 100; i++){
+
+            var r = 1 + i * ds;
+
+            div.style.transform = "scale(" + r + "," + r + ")";
+
+            div.style.left = (cx2 + i * dx - w2/2) + "px";
+            div.style.top  = (cy2 + i * dy - h2/2) + "px";
+
+            yield;
+        }
+
+
+        var lex = new Lex();
+        var parser = new Parser();
+
+        var token_list = lex.lexicalAnalysis( element("math-txt").value );
+        var stmt_list = parser.parse(token_list);
+
+/*
+        MathJax.Hub.Queue(["Typeset", MathJax.Hub, div1]);
+
+        yield;
+
+
+        var div2 = makeDiv( "$$\r\n" + stmt_list.map(x => x.tex()).join("\n\\\\\n") + "\r\n$$" );
+        hr();
+
+        yield;
+
+        MathJax.Hub.Queue(["Typeset", MathJax.Hub, div2]);
+*/
+    }
+
+    var timerId = null;
+    var timerIntervals = [];
+    var iterator;
+
+    function timerFnc(){
+        if(iterator.next().done){
+            // ジェネレータが終了した場合
+
+            clearInterval(timerId);
+            console.log("ジェネレータ 終了");
+        }
+    }
+
+    function pushInterval(interval){
+        if(timerId != null){
+
+            clearInterval(timerId);
+        }
+
+        timerIntervals.push(interval);
+        timerId = setInterval(timerFnc, interval);
+    }
+
+    function popInterval(){
+        timerIntervals.pop();
+        clearInterval(timerId);
+        
+        var interval = timerIntervals.pop();
+        timerId = setInterval(timerFnc, interval);
+    }
+
+    function BodyOnLoad(){
+        iterator = generator();
+
+        pushInterval(1000);
+    }
+    </script>    
+</head>
+<body onload="BodyOnLoad()">
+
+<textarea cols="80" rows="6" id="src-txt">
+    <mi>X</mi>
+    <mo>=</mo>
+    <mn>8</mn>
+    <mfrac>
+        <mn>9</mn>
+        <mi>X</mi>
+    </mfrac>
+</textarea>
+
+<textarea cols="80" rows="6" id="dst-txt">
+    <msqrt>
+        <mn>2</mn>
+    </msqrt>
+
+    <mo>&middot;</mo>
+    <msup>
+        <mi>x</mi>
+        <mn>2</mn>
+    </msup>
+
+    <mo>&middot;</mo>
+    <msub>
+        <mi>x</mi>
+        <mn>2</mn>
+    </msub>
+
+    <mo>&middot;</mo>
+    <msubsup>
+        <mo>&int;</mo>
+        <mn>0</mn>
+        <mn>1</mn>
+    </msubsup>
+    <mi>sin</mi><mo>&af;</mo><mi>x</mi>
+    <mi>d</mi><mi>x</mi>
+
+    <mo>&middot;</mo>
+    <munder>
+        <mo>lim</mo>
+        <mrow>
+            <mi>n</mi><mo>&rarr;</mo><mi>&infin;</mi>
+        </mrow>
+    </munder>
+    <mi>f</mi>
+    <mo>&af;</mo>
+    <mfenced>
+        <mi id='x1'>&Phi;</mi>
+    </mfenced>
+    <mo>=</mo>
+    <mn>0</mn>
+
+    <mo>&middot;</mo>
+    <munderover>
+        <mo>&Sum;</mo>
+        <mrow>
+            <mi>k</mi><mo>=</mo><mn>0</mn>
+        </mrow>
+        <mi>&infin;</mi>
+    </munderover>
+    <msub>
+        <mi>a</mi>
+        <mi>k</mi>
+    </msub>            
+</textarea>
+<br/>
+
+<textarea cols="80" rows="5" id="math-txt">
+    var a : int;
+    var b : int;
+
+    a;
+    sqrt(x/y) * int(x, (a*b)/(a+b), N, 2 * sqrt(x/y));
+    a / (b + c);
+    sum(i, 0, N, p[i]);
+    p[i[j]];
+    var aij : int, B: int;
+    a + p[i[j]] * 2;
+    abc + p[i,j] * 2;
+    abcdefghijkl;            
+
+    y(x, w) = sum(j, 0, M, w[j] * x^j);
+    (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2);
+    E[RMS] = sqrt((2 * E(w__ast))/N);
+    E__tilde(w) = (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2) + (lambda/2) * norm(w)^2;
+</textarea>
+    
+</body>
+</html>
