@@ -7,7 +7,7 @@
     <script data-main="./src/main" src="require.js"></script>
 
     <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-    <script type="text/javascript" src="./src/main.js?ver=206"></script>
+    <script type="text/javascript" src="./src/main.js?ver=225"></script>
     <script type="text/javascript">
 
     function element(id){
@@ -42,6 +42,25 @@
     }
 
     function* generator(){
+
+        var lex = new Lex();
+        var parser = new Parser();
+
+        var token_list = lex.lexicalAnalysis( element("math-txt").value );
+        var stmt_list = parser.parse(token_list);
+
+        token_list = lex.lexicalAnalysis( element("math-txt2").value );
+        stmt_list = parser.parse(token_list);
+
+        var text = stmt_list.map(x => x.mathML()).join("<mspace linebreak='newline' />");
+        mmlDiv(text);
+        hr();
+
+        yield;
+
+        MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
+
+
         var src = mmlDiv(element("src-txt").value);
         hr();
 
@@ -107,27 +126,6 @@
 
             yield;
         }
-
-
-        var lex = new Lex();
-        var parser = new Parser();
-
-        var token_list = lex.lexicalAnalysis( element("math-txt").value );
-        var stmt_list = parser.parse(token_list);
-
-/*
-        MathJax.Hub.Queue(["Typeset", MathJax.Hub, div1]);
-
-        yield;
-
-
-        var div2 = makeDiv( "$$\r\n" + stmt_list.map(x => x.tex()).join("\n\\\\\n") + "\r\n$$" );
-        hr();
-
-        yield;
-
-        MathJax.Hub.Queue(["Typeset", MathJax.Hub, div2]);
-*/
     }
 
     var timerId = null;
@@ -232,27 +230,25 @@
     <msub>
         <mi>a</mi>
         <mi>k</mi>
-    </msub>            
+    </msub>
+
+    <mo>&middot;</mo>
+    <mi>x</mi>
+    <mo>&isin;</mo>
+    <mi>X</mi>
 </textarea>
 <br/>
 
 <textarea cols="80" rows="5" id="math-txt">
-    var a : int;
-    var b : int;
+</textarea>
+<br/>
 
-    a;
+<textarea cols="80" rows="5" id="math-txt2">
     sqrt(x/y) * int(x, (a*b)/(a+b), N, 2 * sqrt(x/y));
-    a / (b + c);
-    sum(i, 0, N, p[i]);
-    p[i[j]];
-    var aij : int, B: int;
-    a + p[i[j]] * 2;
-    abc + p[i,j] * 2;
-    abcdefghijkl;            
-
-    y(x, w) = sum(j, 0, M, w[j] * x^j);
-    (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2);
-    E[RMS] = sqrt((2 * E(w__ast))/N);
+    var a : int, b : int;
+    - a[i,j] + 3 * a[i,j] -3 * a[i,j] + a / (b + c) + a[i] + p[i[j]] * 2 + abc + p[i,j] * 2 + sum(i, 0, N, p[i]);
+    y(x, w) = sum(j, 0, M, w[j] * x^j) + (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2);
+    E[RMS] = sqrt((2 * E(w__lowast))/N);
     E__tilde(w) = (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2) + (lambda/2) * norm(w)^2;
 </textarea>
     

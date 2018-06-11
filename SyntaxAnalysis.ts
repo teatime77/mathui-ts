@@ -445,6 +445,9 @@ class Parser {
     }
 
     parse(token_list:Token[]) : Statement[]{
+        if(token_list.length == 0){
+            return [];
+        }
         this.tokenList = token_list;
         this.tokenPos = 0;
         this.currentToken = token_list[0];

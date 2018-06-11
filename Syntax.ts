@@ -50,6 +50,38 @@ function toTexName(name : string){
     }
 }
 
+function toMathMLName(name : string){
+    var v = [ 
+        "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", 
+        "iota", "kappa", "lambda", "mu", "nu", "xi", "pi", "rho", 
+        "sigma", "tau", "phi", "chi", "psi", "omega"
+    ]
+
+    var k = name.indexOf("__");
+    var name1;
+    if(k != -1){
+        name1 = name.substring(0, k);
+    }
+    else{
+        name1 = name;
+    }
+
+    var name1_low = name1[0].toLowerCase() + name1.substring(1);
+    if(v.indexOf(name1_low) != -1){
+
+        name1 = "&" + name1 + ";";
+    }
+
+    if(k != -1){
+
+        var mark = name.substring(k + 2);
+        return format("<mover> <mi>$1</mi> <mo>&$2;</mo> </mover>", name1, mark);
+    }
+    else{
+        return name1;
+    }
+}
+
 class Variable {
     // 親
     parentVar : object;
@@ -97,6 +129,10 @@ class Variable {
     tex(){
         return toTexName(this.name) + " \\in " + this.typeVar.tex();
     }
+
+    mathML(){
+        return format("<mrow><mi>$1</mi><mo>&isin;</mo>$2</mrow>", toMathMLName(this.name), this.typeVar.mathML());
+    }
 }
 
 /*
@@ -130,6 +166,10 @@ class Class {
 
     tex(){
         return this.name;
+    }
+
+    mathML(){
+        return format("<mi>$1</mi>", this.name);
     }
 }
 
@@ -211,6 +251,26 @@ class Term extends Statement {
             return format("$1 \\cdot $2", "" + this.value, s);
         }
     }
+
+
+    mathMLSub(){
+        console.assert(false);
+    }
+
+    mathML(){
+        var s = this.mathMLSub();
+
+        if(this.value == 1){
+            return s;
+        }
+        else if(this.value == -1){
+            return format("<mrow><mo>-</mo> $1</mrow>", s);
+        }
+        else{
+            return format("<mrow><mn>$1</mn> <mo>&middot;</mo> $2</mrow>", "" + this.value, s);
+        }
+    }
+    
 }
 
 /*
@@ -241,6 +301,10 @@ class Constant extends Term {
 
     tex(){
         return "" + this.value;
+    }
+
+    mathML(){
+        return format("<mn>$1</mn>", "" + this.value);
     }
 }
 
@@ -349,6 +413,27 @@ class Reference extends Term {
         }
         return tex_name;
     }
+
+
+    mathMLSub(){
+        var name = toMathMLName(this.name);
+
+        if (this.indexes != null){
+            var mmls = this.indexes.map(x => x.mathML());
+
+            var idx;
+            if(mmls.length == 1){
+                idx = mmls[0];
+            }
+            else{
+//                idx = format("<mfenced>$1</mfenced>", mmls.join(""));//<mo>,</mo>
+                idx = format("<mrow>$1</mrow>", mmls.join("<mo>,</mo>"));
+            }
+
+            return format("<msub><mi>$1</mi> $2</msub>", name, idx);
+        }
+        return format("<mi>$1</mi>", name);
+    }    
 }
 
 /*
@@ -600,6 +685,68 @@ class Apply extends Term {
             return s;
         }
     }
+
+    mathMLSub2(){
+        var texs = this.args.map(x => x.mathML());
+
+        switch(this.functionApp.name){
+        case "int":
+            return format("<mrow> <munderover><mo>&#x222B;</mo> $2 $3 </munderover> $4 <mi>d</mi> $1 </mrow>", texs);
+        case "sum":
+            return format("<mrow> <munderover><mo>&Sum;</mo> <mrow>$1<mo>=</mo>$2</mrow> $3 </munderover> $4 </mrow>", texs);
+        case "^":
+            var arg1 = this.args[0];
+            if(arg1 instanceof Apply){
+                switch(arg1.functionApp.name){
+                case "*":
+                case "/":
+                case "+":
+                case "-":
+                    return format("<msup><mfenced>$1</mfenced> $2</msup>", texs);                                
+                }
+            }
+            return format("<msup>$1 $2</msup>", texs);
+        case "sqrt":
+            return format("<msqrt>$1</msqrt>", texs);
+        case "norm":
+            return format("<mfenced open='||' close='||'> $1 </mfenced>", texs);
+        case "*":
+        case "=":
+        case "!=":
+        case "<":
+        case "<=":
+        case ">":
+        case ">=":
+            var opr = { "*":"&middot;", "=":"=" , "!=":"&ne;" , "<":"&lt;", "<=":"&le;", ">":"&gt;" , ">=":"&ge;" }[this.functionApp.name];
+            return "<mrow>" + texs.join("<mo>" + opr + "</mo>") + "</mrow>";
+        case "+":
+            var s = "";
+            for(let [idx, arg] of this.args.entries()){
+                if(0 < idx && 0 <= arg.value){
+                    s += "<mo>+</mo>";
+                }
+                s += texs[idx];
+            }
+            return "<mrow>" + s + "</mrow>";
+        case "/":
+            return format("<mfrac>$1 $2</mfrac>", texs);
+        default:
+            return format("$1 <mfenced> $2 </mfenced>", this.functionApp.mathML(), texs.join(""));
+        }
+    }
+
+    mathMLSub(){
+        var s = this.mathMLSub2();
+
+        if(this.withParenthesis){
+            return format("<mfenced>$1</mfenced>", s);
+        }
+        else{
+            return s;
+        }
+    }
+
+
 }
 
 /*
@@ -628,6 +775,16 @@ class VariableDeclaration extends Statement {
 
     tex(){
         return this.variables.map(x => x.tex()).join(",");
+    }
+
+    mathML(){
+        if(this.variables.length == 1){
+            return this.variables[0].mathML();
+        }
+        else{
+
+            return format("<mrow>$1</mrow>", this.variables.map(x => x.mathML()).join("<mo>,</mo>"));
+        }
     }
 }
 
