@@ -177,12 +177,12 @@ class SymbolicComputation {
 
             var diffs: Term[] = app.args.map(t => this.Differential(t, r1, var_tbl));
 
-            if (app.functionApp.varRef == AddFnc) {
+            if (app.functionApp.isAddFnc()) {
                 // 加算の場合
 
                 return this.Add(diffs);
             }
-            else if (app.functionApp.varRef == MulFnc) {
+            else if (app.functionApp.isMulFnc()) {
                 // 乗算の場合
 
                 var args: Term[] = new Term[app.args.length];
@@ -216,24 +216,16 @@ class SymbolicComputation {
         if(obj == null){
             return null;
         }
-        if(obj instanceof Reference){
-            
-            var ret = fnc(obj, args);
-            if(ret != undefined){
+        if(obj instanceof Apply){
+            obj.functionApp = this.TraverseRep(obj.functionApp, fnc, ...args);
 
-                return ret;
-            }
-        }
-        else if(obj instanceof Apply){
             obj.args.forEach((arg, index) => {
 
-                var ret = fnc(arg, args);
-                if(ret != undefined){
-
-                    obj.args[index] = ret;
-                }
+                obj.args[index] = this.TraverseRep(arg, fnc, ...args);
             });
         }
+
+        return fnc(obj, ...args);
     }
 
     /*
@@ -256,7 +248,28 @@ class SymbolicComputation {
 
         this.TraverseRep(t1, fnc, subst_tbl, var_tbl);
     }
-    
+
+    /*
+        指定した名前の変数参照に項を代入します。
+    */
+    SubstByName(t1: Term, name: string, new_term: Term ) {
+        var fnc = function(t: Term, name: string, new_term: Term){
+            console.log(t);
+            if(t instanceof Reference){
+
+                console.log(t.name);
+            }
+            if(t instanceof Reference && t.name == name){
+                // 指定した名前の変数参照の場合
+
+                return new_term.clone(null);
+            }
+
+            return t;
+        }
+
+        this.TraverseRep(t1, fnc, name, new_term);
+    }
 
     /*
         数式の簡約化

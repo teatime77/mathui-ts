@@ -444,16 +444,17 @@ class Parser {
         }
     }
 
-    parse(token_list:Token[]) : Statement[]{
-        if(token_list.length == 0){
-            return [];
-        }
+    initParse(token_list:Token[]){
+        console.assert(2 <= token_list.length);
         this.tokenList = token_list;
         this.tokenPos = 0;
         this.currentToken = token_list[0];
         this.nextToken = token_list[1];
+    }
 
-        var pred : Predicate = new Predicate();
+    parse(token_list:Token[]) : Statement[]{
+        this.initParse(token_list);
+
         var stmt_list = new Array<Statement>();
         for(;;){
             var stmt = this.readStatement();

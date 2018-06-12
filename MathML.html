@@ -7,7 +7,7 @@
     <script data-main="./src/main" src="require.js"></script>
 
     <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-    <script type="text/javascript" src="./src/main.js?ver=225"></script>
+    <script type="text/javascript" src="./src/main.js?ver=226"></script>
     <script type="text/javascript">
 
     function element(id){
@@ -49,11 +49,32 @@
         var token_list = lex.lexicalAnalysis( element("math-txt").value );
         var stmt_list = parser.parse(token_list);
 
-        token_list = lex.lexicalAnalysis( element("math-txt2").value );
-        stmt_list = parser.parse(token_list);
-
         var text = stmt_list.map(x => x.mathML()).join("<mspace linebreak='newline' />");
         mmlDiv(text);
+        hr();
+
+        mmlDiv(stmt_list[0].clone().mathML());
+        hr();
+
+        var sc = new SymbolicComputation();
+        var t1 = stmt_list[0].clone();
+        var U_v = stmt_list[1];
+
+        // x -> u + v
+        sc.SubstByName(t1, "x", U_v);
+        mmlDiv(t1.mathML());
+        hr();
+
+        // f -> g
+        t1 = stmt_list[0].clone();
+        sc.SubstByName(t1, "f", new Reference("g"));
+        mmlDiv(t1.mathML());
+        hr();
+
+        // f -> u + v
+        t1 = stmt_list[0].clone();
+        sc.SubstByName(t1, "f", U_v);
+        mmlDiv(t1.mathML());
         hr();
 
         yield;
@@ -168,7 +189,7 @@
 </head>
 <body onload="BodyOnLoad()">
 
-<textarea cols="80" rows="6" id="src-txt">
+<textarea cols="1" rows="1" id="src-txt">
     <mi>X</mi>
     <mo>=</mo>
     <mn>8</mn>
@@ -178,7 +199,7 @@
     </mfrac>
 </textarea>
 
-<textarea cols="80" rows="6" id="dst-txt">
+<textarea cols="1" rows="1" id="dst-txt">
     <msqrt>
         <mn>2</mn>
     </msqrt>
@@ -237,13 +258,10 @@
     <mo>&isin;</mo>
     <mi>X</mi>
 </textarea>
-<br/>
 
-<textarea cols="80" rows="5" id="math-txt">
-</textarea>
-<br/>
-
-<textarea cols="80" rows="5" id="math-txt2">
+<textarea cols="1" rows="1" id="math-txt">
+    dif(f(x),x) = lim(Delta, 0, (f(x+Delta) - f(x)) / Delta );
+    u + v;
     sqrt(x/y) * int(x, (a*b)/(a+b), N, 2 * sqrt(x/y));
     var a : int, b : int;
     - a[i,j] + 3 * a[i,j] -3 * a[i,j] + a / (b + c) + a[i] + p[i[j]] * 2 + abc + p[i,j] * 2 + sum(i, 0, N, p[i]);

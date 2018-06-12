@@ -11,6 +11,7 @@ function format(str: string, ...args){
     return ret;
 }
 
+
 function toTexName(name : string){
     var v = [ 
         "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", 
@@ -175,16 +176,16 @@ class Class {
 
 var IntClass : Class = new Class("int");
 var RealClass : Class = new Class("real");
-var AddFnc : Func = new Func("+", null)
-var MulFnc : Func = new Func("*", null)
-var DivFnc : Func = new Func("/", null)
-var PowFnc : Func = new Func("^", null)
-var EqRel : Func = new Func("=", null)
-var NeRel : Func = new Func("!=", null)
-var GtRel : Func = new Func(">", null)
-var GeRel : Func = new Func(">=", null)
-var LtRel : Func = new Func("<", null)
-var LeRel : Func = new Func("<=", null)
+var AddFnc : Func = new Func("+", null);
+var MulFnc : Func = new Func("*", null);
+var DivFnc : Func = new Func("/", null);
+var PowFnc : Func = new Func("^", null);
+var EqRel : Func = new Func("=", null);
+var NeRel : Func = new Func("!=", null);
+var GtRel : Func = new Func(">", null);
+var GeRel : Func = new Func(">=", null);
+var LtRel : Func = new Func("<", null);
+var LeRel : Func = new Func("<=", null);
 
 
 
@@ -228,6 +229,14 @@ class Term extends Statement {
         return null;
     }
 
+    isAddFnc(){
+        return this instanceof Reference && this.varRef == AddFnc;
+    }
+
+    isMulFnc(){
+        return this instanceof Reference && this.varRef == MulFnc;
+    }
+        
     replace(old_term: Term, new_term: Term){
     }
 
@@ -318,7 +327,7 @@ class Reference extends Term {
     // 配列の添え字
     indexes : Term[];
 
-    constructor(name : string, ref_var : Variable, idx : Term[] = null, value: number = 1) {
+    constructor(name : string, ref_var : Variable = null, idx : Term[] = null, value: number = 1) {
         super();
         this.name = name;
         this.varRef = ref_var;
@@ -652,27 +661,6 @@ class Apply extends Term {
         default:
             return format("$1($2)", this.functionApp.tex(), texs.join(","));
         }
-    
-/*
-        else if(this.functionApp.name == "/"){
-            return this.texDiv();
-        }
-        else if(this.isIntegral()){
-            return this.texIntegral();
-        }
-        else if(this.isSqrt()){
-            return this.texSqrt();
-        }
-        else{
-
-            var op: string;
-            else{
-                op = this.functionApp.name;
-            }
-
-            ui_app = new HorizontalBlock(this, ctx, joinMath(op, this.args)).layoutHorizontal();
-        }
-*/
     }
 
     texSub(){
@@ -694,6 +682,10 @@ class Apply extends Term {
             return format("<mrow> <munderover><mo>&#x222B;</mo> $2 $3 </munderover> $4 <mi>d</mi> $1 </mrow>", texs);
         case "sum":
             return format("<mrow> <munderover><mo>&Sum;</mo> <mrow>$1<mo>=</mo>$2</mrow> $3 </munderover> $4 </mrow>", texs);
+        case "lim":
+            return format("<mrow> <munder><mo>lim</mo> <mrow>$1<mo>&rarr;</mo>$2</mrow></munder> $3 </mrow>", texs);
+        case "dif":
+            return format("<mfrac><mrow><mi>d</mi>$1</mrow> <mrow><mi>d</mi>$2</mrow></mfrac>", texs);
         case "^":
             var arg1 = this.args[0];
             if(arg1 instanceof Apply){
@@ -786,11 +778,6 @@ class VariableDeclaration extends Statement {
             return format("<mrow>$1</mrow>", this.variables.map(x => x.mathML()).join("<mo>,</mo>"));
         }
     }
-}
-
-class Predicate {
-    variables : Variable[] = new Array<Variable>();
-    expression : Term;
 }
 
 class StatementFlow {
