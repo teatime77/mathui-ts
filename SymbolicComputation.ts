@@ -212,11 +212,46 @@ class SymbolicComputation {
         return null;
     }
 
+    Traverse(obj, fnc, ...args){
+        if(obj == null){
+            return;
+        }
+        if(obj instanceof Reference){
+            if(obj.indexes != null){
+
+                obj.indexes.forEach((idx, index) => {
+
+                    this.Traverse(idx, fnc, ...args);
+                });
+            }
+        }
+        else if(obj instanceof Apply){
+            this.Traverse(obj.functionApp, fnc, ...args);
+
+            obj.args.forEach((arg, index) => {
+
+                this.Traverse(arg, fnc, ...args);
+            });
+        }
+
+        fnc(obj, ...args);
+    }
+
     TraverseRep(obj, fnc, ...args){
         if(obj == null){
             return null;
         }
-        if(obj instanceof Apply){
+
+        if(obj instanceof Reference){
+            if(obj.indexes != null){
+
+                obj.indexes.forEach((idx, index) => {
+
+                    obj.indexes[index] = this.TraverseRep(idx, fnc, ...args);
+                });
+            }
+        }    
+        else if(obj instanceof Apply){
             obj.functionApp = this.TraverseRep(obj.functionApp, fnc, ...args);
 
             obj.args.forEach((arg, index) => {
@@ -231,7 +266,7 @@ class SymbolicComputation {
     /*
         変数に項を代入します。
     */
-    Subst(t1: Term, subst_tbl : Map<Reference, Term>, var_tbl: Map<Variable, Variable> = null) {
+    Subst(root: Term, subst_tbl : Map<Reference, Term>, var_tbl: Map<Variable, Variable> = null) {
         var fnc = function(t: Term, subst_tbl: Map<Reference, Term>, var_tbl: Map<Variable, Variable>){
             if(t instanceof Reference){
                 // 変数参照の場合
@@ -246,29 +281,42 @@ class SymbolicComputation {
             return undefined;
         }
 
-        this.TraverseRep(t1, fnc, subst_tbl, var_tbl);
+        this.TraverseRep(root, fnc, subst_tbl, var_tbl);
     }
 
     /*
         指定した名前の変数参照に項を代入します。
     */
-    SubstByName(t1: Term, name: string, new_term: Term ) {
-        var fnc = function(t: Term, name: string, new_term: Term){
-            console.log(t);
-            if(t instanceof Reference){
-
-                console.log(t.name);
-            }
-            if(t instanceof Reference && t.name == name){
+    SubstByName(root: Term, name: string, new_term: Term ) {
+        var fnc = function(current: Term, name: string, new_term: Term){
+            if(current instanceof Reference && current.name == name){
                 // 指定した名前の変数参照の場合
 
                 return new_term.clone(null);
             }
 
-            return t;
+            return current;
         }
 
-        this.TraverseRep(t1, fnc, name, new_term);
+        this.TraverseRep(root, fnc, name, new_term);
+    }
+
+
+    /*
+        検索対象の項を指定した項に置換します。
+    */
+    ReplaceTerm(root: Term, old_term: Term, new_term: Term ) {
+        var fnc = function(current: Term, old_term: Term, new_term: Term){
+            if(current.eq(old_term)){
+                // 検索対象の項と同じ場合
+
+                return new_term.clone(null);
+            }
+
+            return current;
+        }
+
+        this.TraverseRep(root, fnc, old_term, new_term);
     }
 
     /*

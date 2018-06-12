@@ -58,22 +58,34 @@
 
         var sc = new SymbolicComputation();
         var t1 = stmt_list[0].clone();
-        var U_v = stmt_list[1];
+        var uv = stmt_list[1];
 
         // x -> u + v
-        sc.SubstByName(t1, "x", U_v);
+        t1.setDisplayText();
+        sc.SubstByName(t1, "x", uv);
         mmlDiv(t1.mathML());
         hr();
 
         // f -> g
         t1 = stmt_list[0].clone();
+        t1.setDisplayText();
         sc.SubstByName(t1, "f", new Reference("g"));
         mmlDiv(t1.mathML());
         hr();
 
         // f -> u + v
         t1 = stmt_list[0].clone();
-        sc.SubstByName(t1, "f", U_v);
+        t1.setDisplayText();
+        sc.SubstByName(t1, "f", uv);
+        mmlDiv(t1.mathML());
+        hr();
+
+
+        // u + v -> F * G
+        var FG = parse("F * G;");
+        t1 = t1.clone();
+        t1.setDisplayText();
+        sc.ReplaceTerm(t1, uv, FG);
         mmlDiv(t1.mathML());
         hr();
 

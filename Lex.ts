@@ -25,11 +25,12 @@ class Token{
 
 class Lex{
     public constructor(){
-
+        currentLex = this;
     }
-        /*
-            字句解析をして各文字の字句型の配列を得ます。
-        */
+
+    /*
+        字句解析をして各文字の字句型の配列を得ます。
+    */
     public lexicalAnalysis(text : string) : Array<Token> {
         var line_idx: number = 0;
         var token_list : Token[] = new Array<Token>();
@@ -178,3 +179,5 @@ class Lex{
         return token_list;
     }
 }
+
+var currentLex : Lex;

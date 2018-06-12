@@ -14,6 +14,7 @@ class Parser {
     arrayTypes : ArrayType[] = new Array<ArrayType>();
 
     constructor(){
+        currentParser = this;
         this.simpleTypes.push(IntClass);
         this.simpleTypes.push(RealClass);
     }
@@ -464,4 +465,11 @@ class Parser {
             stmt_list.push(stmt);
         }
     }
+}
+
+var currentParser : Parser;
+
+function parse(text: string){
+    currentParser.initParse(currentLex.lexicalAnalysis(text));
+    return currentParser.readStatement();
 }

@@ -221,8 +221,20 @@ class Term extends Statement {
 
     uiTerm  : ElementUI;
 
+    displayText: string;
+
+    setDisplayText() : string {
+        console.assert(false);
+        return this.displayText;
+    }
+
+    toString(){
+        return this.displayText;
+    }
+
     eq(t: Term) : boolean{
-        return false;
+        console.assert(this.displayText != undefined && t.displayText != undefined);
+        return this == t || this.displayText == t.displayText;
     }
 
     clone(var_tbl): Term {
@@ -291,6 +303,13 @@ class Constant extends Term {
 
         this.value = value;
         this.typeTerm = type_term;
+
+        this.setDisplayText();
+    }
+
+    setDisplayText() : string {
+        this.displayText = "" + this.value;
+        return this.displayText;
     }
 
     /*
@@ -339,6 +358,16 @@ class Reference extends Term {
                 t.parent = this;
             }
         }
+
+        this.setDisplayText();
+    }
+
+    setDisplayText() : string {
+        this.displayText = this.name;
+        if(this.indexes != null){            
+            this.displayText += "[" + this.indexes.map(x => x.setDisplayText()).join(",") + "]";
+        }
+        return this.displayText;
     }
 
     /*
@@ -466,6 +495,13 @@ class Apply extends Term {
         for(let t of this.args) {
             t.parent = this;
         }
+
+        this.setDisplayText();
+    }
+
+    setDisplayText() : string {
+        this.displayText = "(" + this.functionApp.setDisplayText() + ")(" + this.args.map(x => x.setDisplayText()).join(",") + ")";
+        return this.displayText;
     }
 
     /*
