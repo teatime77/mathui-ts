@@ -450,14 +450,14 @@ class Reference extends Term {
 */
 class Apply extends Term {
     // 関数
-    functionApp : Reference;
+    functionApp : Term;
 
     // 引数
     args : Term[];
 
     withParenthesis : boolean = false;
     
-    constructor(fnc : Reference, args : Term[]) {
+    constructor(fnc : Term, args : Term[]) {
         super();
         this.functionApp = fnc;
         this.args = args;
@@ -500,11 +500,11 @@ class Apply extends Term {
     }
 
     isIntegral(){
-        return this.functionApp.name == "int";
+        return this.functionApp instanceof Reference && this.functionApp.name == "int";
     }
 
     isSqrt(){
-        return this.functionApp.name == "sqrt";
+        return this.functionApp instanceof Reference && this.functionApp.name == "sqrt";
     }
 
     /*
@@ -558,29 +558,37 @@ class Apply extends Term {
     makeUI(ctx : ContextUI) : ElementUI{
         var ui_app;
 
-        if(this.functionApp.name == "sum"){
-            ui_app = this.makeSum(ctx);
-        }
-        else if(this.functionApp.name == "/"){
-            ui_app = this.makeDiv(ctx);
-        }
-        else if(this.isIntegral()){
-            ui_app = this.makeIntegral(ctx);
-        }
-        else if(this.isSqrt()){
-            ui_app = this.makeSqrt(ctx);
+        if(this.functionApp instanceof Reference){
+
+            if(this.functionApp.name == "sum"){
+                ui_app = this.makeSum(ctx);
+            }
+            else if(this.functionApp.name == "/"){
+                ui_app = this.makeDiv(ctx);
+            }
+            else if(this.isIntegral()){
+                ui_app = this.makeIntegral(ctx);
+            }
+            else if(this.isSqrt()){
+                ui_app = this.makeSqrt(ctx);
+            }
+            else{
+
+                var op: string;
+                if(this.functionApp.name == "*"){
+                    op = "⋅";
+                }
+                else{
+                    op = this.functionApp.name;
+                }
+
+                ui_app = new HorizontalBlock(this, ctx, joinMath(op, this.args)).layoutHorizontal();
+            }
         }
         else{
 
-            var op: string;
-            if(this.functionApp.name == "*"){
-                op = "⋅";
-            }
-            else{
-                op = this.functionApp.name;
-            }
-
-            ui_app = new HorizontalBlock(this, ctx, joinMath(op, this.args)).layoutHorizontal();
+            var fnc_ui = this.functionApp.makeUI(ctx);
+            ui_app = new HorizontalBlock(this, ctx, joinMath(fnc_ui, this.args)).layoutHorizontal();
         }
 
         this.uiTerm = ui_app;
@@ -588,23 +596,27 @@ class Apply extends Term {
     }
 
     getPrecedence(){
-        switch(this.functionApp.name){
-        case "*":
-        case "/":
-            return 1;
-        case "+":
-        case "-":
-            return 2;
-        case "=":
-        case "!=":
-        case "<":
-        case "<=":
-        case ">":
-        case ">=":
-            return 3;
-        default:
-            return 0;
+        if(this.functionApp instanceof Reference){
+
+            switch(this.functionApp.name){
+            case "*":
+            case "/":
+                return 1;
+            case "+":
+            case "-":
+                return 2;
+            case "=":
+            case "!=":
+            case "<":
+            case "<=":
+            case ">":
+            case ">=":
+                return 3;
+            default:
+                return 0;
+            }
         }
+        return 0;
     }
 
     setParenthesis(){
@@ -619,48 +631,59 @@ class Apply extends Term {
     texSub2(){
         var texs = this.args.map(x => x.tex());
 
-        switch(this.functionApp.name){
-        case "sum":
-            return format("\\sum_{$1=$2}^{$3} $4", texs);
-        case "^":
-            var arg1 = this.args[0];
-            if(arg1 instanceof Apply){
-                switch(arg1.functionApp.name){
-                case "*":
-                case "/":
-                case "+":
-                case "-":
-                    return format("($1)^{$2}", texs);                                
+        if(this.functionApp instanceof Reference){
+
+            switch(this.functionApp.name){
+            case "sum":
+                return format("\\sum_{$1=$2}^{$3} $4", texs);
+            case "^":
+                var arg1 = this.args[0];
+                if(arg1 instanceof Apply){
+                    if(arg1.functionApp instanceof Reference){
+
+                        switch(arg1.functionApp.name){
+                        case "*":
+                        case "/":
+                        case "+":
+                        case "-":
+                            return format("($1)^{$2}", texs);                                
+                        }
+                    }
+                    else{
+
+                        return format("($1)^{$2}", texs);                                
+                    }
                 }
-            }
-            return format("$1^{$2}", texs);
-        case "sqrt":
-            return format("\\sqrt{$1}", texs);
-        case "norm":
-            return format("\\| $1 \\|", texs);
-        case "*":
-        case "=":
-        case "!=":
-        case "<":
-        case "<=":
-        case ">":
-        case ">=":
-            var opr = { "*":"\\cdot", "=":"=" , "!=":"\\neq" , "<":"\\lt", "<=":"\\leqq", ">":"\\gt" , ">=":"\\geqq" }[this.functionApp.name];
-            return texs.join(" " + opr + " ");
-        case "+":
-            var s = "";
-            for(let [idx, arg] of this.args.entries()){
-                if(0 < idx && 0 <= arg.value){
-                    s += " + ";
+                return format("$1^{$2}", texs);
+            case "sqrt":
+                return format("\\sqrt{$1}", texs);
+            case "norm":
+                return format("\\| $1 \\|", texs);
+            case "*":
+            case "=":
+            case "!=":
+            case "<":
+            case "<=":
+            case ">":
+            case ">=":
+                var opr = { "*":"\\cdot", "=":"=" , "!=":"\\neq" , "<":"\\lt", "<=":"\\leqq", ">":"\\gt" , ">=":"\\geqq" }[this.functionApp.name];
+                return texs.join(" " + opr + " ");
+            case "+":
+                var s = "";
+                for(let [idx, arg] of this.args.entries()){
+                    if(0 < idx && 0 <= arg.value){
+                        s += " + ";
+                    }
+                    s += texs[idx];
                 }
-                s += texs[idx];
+                return s;
+            case "/":
+                return format("\\frac{$1}{$2}", texs);
+            default:
+                return format("$1($2)", this.functionApp.tex(), texs.join(","));
             }
-            return s;
-        case "/":
-            return format("\\frac{$1}{$2}", texs);
-        default:
-            return format("$1($2)", this.functionApp.tex(), texs.join(","));
         }
+        return format("($1)($2)", this.functionApp.tex(), texs.join(","));
     }
 
     texSub(){
@@ -677,54 +700,65 @@ class Apply extends Term {
     mathMLSub2(){
         var texs = this.args.map(x => x.mathML());
 
-        switch(this.functionApp.name){
-        case "int":
-            return format("<mrow> <munderover><mo>&#x222B;</mo> $2 $3 </munderover> $4 <mi>d</mi> $1 </mrow>", texs);
-        case "sum":
-            return format("<mrow> <munderover><mo>&Sum;</mo> <mrow>$1<mo>=</mo>$2</mrow> $3 </munderover> $4 </mrow>", texs);
-        case "lim":
-            return format("<mrow> <munder><mo>lim</mo> <mrow>$1<mo>&rarr;</mo>$2</mrow></munder> $3 </mrow>", texs);
-        case "dif":
-            return format("<mfrac><mrow><mi>d</mi>$1</mrow> <mrow><mi>d</mi>$2</mrow></mfrac>", texs);
-        case "^":
-            var arg1 = this.args[0];
-            if(arg1 instanceof Apply){
-                switch(arg1.functionApp.name){
-                case "*":
-                case "/":
-                case "+":
-                case "-":
-                    return format("<msup><mfenced>$1</mfenced> $2</msup>", texs);                                
+        if(this.functionApp instanceof Reference){
+
+            switch(this.functionApp.name){
+            case "int":
+                return format("<mrow> <munderover><mo>&#x222B;</mo> $2 $3 </munderover> $4 <mi>d</mi> $1 </mrow>", texs);
+            case "sum":
+                return format("<mrow> <munderover><mo>&Sum;</mo> <mrow>$1<mo>=</mo>$2</mrow> $3 </munderover> $4 </mrow>", texs);
+            case "lim":
+                return format("<mrow> <munder><mo>lim</mo> <mrow>$1<mo>&rarr;</mo>$2</mrow></munder> $3 </mrow>", texs);
+            case "dif":
+                return format("<mfrac><mrow><mi>d</mi>$1</mrow> <mrow><mi>d</mi>$2</mrow></mfrac>", texs);
+            case "^":
+                var arg1 = this.args[0];
+                if(arg1 instanceof Apply){
+                    if(arg1.functionApp instanceof Reference){
+
+                        switch(arg1.functionApp.name){
+                        case "*":
+                        case "/":
+                        case "+":
+                        case "-":
+                            return format("<msup><mfenced>$1</mfenced> $2</msup>", texs);                                
+                        }
+                    }
+                    else{
+
+                        return format("<msup><mfenced>$1</mfenced> $2</msup>", texs);                                
+                    }
                 }
-            }
-            return format("<msup>$1 $2</msup>", texs);
-        case "sqrt":
-            return format("<msqrt>$1</msqrt>", texs);
-        case "norm":
-            return format("<mfenced open='||' close='||'> $1 </mfenced>", texs);
-        case "*":
-        case "=":
-        case "!=":
-        case "<":
-        case "<=":
-        case ">":
-        case ">=":
-            var opr = { "*":"&middot;", "=":"=" , "!=":"&ne;" , "<":"&lt;", "<=":"&le;", ">":"&gt;" , ">=":"&ge;" }[this.functionApp.name];
-            return "<mrow>" + texs.join("<mo>" + opr + "</mo>") + "</mrow>";
-        case "+":
-            var s = "";
-            for(let [idx, arg] of this.args.entries()){
-                if(0 < idx && 0 <= arg.value){
-                    s += "<mo>+</mo>";
+                return format("<msup>$1 $2</msup>", texs);
+            case "sqrt":
+                return format("<msqrt>$1</msqrt>", texs);
+            case "norm":
+                return format("<mfenced open='||' close='||'> $1 </mfenced>", texs);
+            case "*":
+            case "=":
+            case "!=":
+            case "<":
+            case "<=":
+            case ">":
+            case ">=":
+                var opr = { "*":"&middot;", "=":"=" , "!=":"&ne;" , "<":"&lt;", "<=":"&le;", ">":"&gt;" , ">=":"&ge;" }[this.functionApp.name];
+                return "<mrow>" + texs.join("<mo>" + opr + "</mo>") + "</mrow>";
+            case "+":
+                var s = "";
+                for(let [idx, arg] of this.args.entries()){
+                    if(0 < idx && 0 <= arg.value){
+                        s += "<mo>+</mo>";
+                    }
+                    s += texs[idx];
                 }
-                s += texs[idx];
+                return "<mrow>" + s + "</mrow>";
+            case "/":
+                return format("<mfrac>$1 $2</mfrac>", texs);
+            default:
+                return format("$1 <mfenced> $2 </mfenced>", this.functionApp.mathML(), texs.join(""));
             }
-            return "<mrow>" + s + "</mrow>";
-        case "/":
-            return format("<mfrac>$1 $2</mfrac>", texs);
-        default:
-            return format("$1 <mfenced> $2 </mfenced>", this.functionApp.mathML(), texs.join(""));
         }
+        return format("<mrow> <mfenced> $1 </mfenced> <mfenced> $2 </mfenced></mrow>", this.functionApp.mathML(), texs.join(""));
     }
 
     mathMLSub(){
