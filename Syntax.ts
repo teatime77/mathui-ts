@@ -233,6 +233,8 @@ class Term extends Statement {
 
     displayText: string;
 
+    metaId : string;
+
     setDisplayText() : string {
         console.assert(false);
         return this.displayText;
@@ -816,8 +818,6 @@ class Apply extends Term {
             return s.replace(">", " id='" + this.id + "'>");
         }
     }
-
-
 }
 
 /*

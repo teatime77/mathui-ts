@@ -173,8 +173,18 @@
 
         var text = stmt_list.map(x => x.mathML()).join("<mspace linebreak='newline' />");
         mmlDiv(text);
+        hr();
         for(waitTypeset(); ! typeset_done; yield);
-    }
+
+        // 積の微分
+        token_list = lex.lexicalAnalysis( element("mul-dif").value );
+        pushInterval(1000);
+        for(let stmt of parser.parse(token_list)){
+            mmlDiv( stmt.mathML() );
+            for(waitTypeset(); ! typeset_done; yield);
+        }
+        popInterval();
+}
 
     var timerId = null;
     var timerIntervals = [];
@@ -286,6 +296,17 @@
     <mi>X</mi>
 </textarea>
 
+<textarea cols="1" rows="1" id="mul-dif">
+    dif((f*g)(x),x);
+    lim(Delta, 0, ($1{(f*g)(x+Delta)} - (f*g)(x)) / Delta );
+    lim(Delta, 0, (f(x+Delta)*g(x+Delta) - f(x)*g(x)) / Delta )
+    = lim(Delta, 0, (f(x+Delta)*g(x+Delta) - f(x+Delta)*g(x) + f(x+Delta)*g(x) - f(x)*g(x)) / Delta )
+    = lim(Delta, 0, (f(x+Delta)*g(x+Delta) - f(x+Delta)*g(x)) / Delta ) + lim(Delta, 0, ( f(x+Delta)*g(x) - f(x)*g(x) ) / Delta );
+lim(Delta, 0, f(x+Delta)*((g(x+Delta) - g(x)) / Delta)) + lim(Delta, 0, ( f(x+Delta) - f(x) ) / Delta )*g(x)
+    = lim(Delta, 0, f(x+Delta)) * lim(Delta, 0, (g(x+Delta) - g(x)) / Delta) + lim(Delta, 0, ( f(x+Delta) - f(x) ) / Delta )*g(x)
+    = f(x) * dif(g(x),x) + dif(f(x),x) * g(x);
+</textarea>
+
 <textarea cols="1" rows="1" id="math-txt">
     dif(f(x),x) = lim(Delta, 0, (f(x+Delta) - f(x)) / Delta );
     (f + g)(x) = f(x) + g(x);
@@ -294,15 +315,7 @@
         = - a[i,j] + 3 * a[i,j] -3 * a[i,j] + a / (b + c) + a[i] + p[i[j]] * 2 + abc + p[i,j] * 2 + sum(i, 0, N, p[i]);
     y(x, w) = sum(j, 0, M, w[j] * x^j) + (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2) 
         = E[RMS] = sqrt((2 * E(w__lowast))/N)
-        = E__tilde(w) = (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2) + (lambda/2) * norm(w)^2;
-        dif((f*g)(x),x) = lim(Delta, 0, ((f*g)(x+Delta) - (f*g)(x)) / Delta )
-        = lim(Delta, 0, (f(x+Delta)*g(x+Delta) - f(x)*g(x)) / Delta )
-        = lim(Delta, 0, (f(x+Delta)*g(x+Delta) - f(x+Delta)*g(x) + f(x+Delta)*g(x) - f(x)*g(x)) / Delta )
-        = lim(Delta, 0, (f(x+Delta)*g(x+Delta) - f(x+Delta)*g(x)) / Delta ) + lim(Delta, 0, ( f(x+Delta)*g(x) - f(x)*g(x) ) / Delta );
-    lim(Delta, 0, f(x+Delta)*((g(x+Delta) - g(x)) / Delta)) + lim(Delta, 0, ( f(x+Delta) - f(x) ) / Delta )*g(x)
-        = lim(Delta, 0, f(x+Delta)) * lim(Delta, 0, (g(x+Delta) - g(x)) / Delta) + lim(Delta, 0, ( f(x+Delta) - f(x) ) / Delta )*g(x)
-        = f(x) * dif(g(x),x) + dif(f(x),x) * g(x);
-        
+        = E__tilde(w) = (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2) + (lambda/2) * norm(w)^2;        
 </textarea>
     
 </body>

@@ -79,6 +79,9 @@ enum TokenType{
     // 予約語
     reservedWord,
 
+    // $n
+    metaId,
+
     // End Of Text
     eot,
 

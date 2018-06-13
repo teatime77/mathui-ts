@@ -253,6 +253,20 @@ class Parser {
             // 関数適用を返します。
             return new Apply(term, args);
         }
+        else if (this.currentToken.typeTkn == TokenType.metaId) {
+            // $n{・}の場合
+
+            var meta_id : Token = this.getTokenT(TokenType.metaId);
+            this.getToken("{");
+
+            // 式を読みます。
+            var term : Term = this.readExpression();
+            term.metaId = meta_id.text;
+
+            this.getToken("}");
+
+            return term;
+        }
         else {
             throw new SyntaxException();
         }
