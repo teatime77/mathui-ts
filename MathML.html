@@ -76,7 +76,7 @@
         // サイズ変更の差分
         var ds = (sc - 1) / 100;
 
-        pushInterval(20);
+        pushInterval(10);
         for(var i = 0; i < 100; i++){
 
             var r = 1 + i * ds;
@@ -108,16 +108,9 @@
         var token_list = lex.lexicalAnalysis( element("math-txt").value );
         var stmt_list = parser.parse(token_list);
 
-        var text = stmt_list.map(x => x.mathML()).join("<mspace linebreak='newline' />");
-        mmlDiv(text);
-        hr();
-
-        mmlDiv(stmt_list[0].clone().mathML());
-        hr();
-
         var sc = new SymbolicComputation();
         var t1 = stmt_list[0].clone();
-        var uv = stmt_list[1];
+        var uv = parse("u+v;");
 
         // x -> u + v
         t1.setDisplayText();
@@ -177,6 +170,10 @@
         console.log("dst-txt");
 
         for(var it = moveTo(src, element("x1")); ! it.next().done; yield);
+
+        var text = stmt_list.map(x => x.mathML()).join("<mspace linebreak='newline' />");
+        mmlDiv(text);
+        for(waitTypeset(); ! typeset_done; yield);
     }
 
     var timerId = null;
@@ -213,7 +210,7 @@
     function BodyOnLoad(){
         iterator = generator();
 
-        pushInterval(2000);
+        pushInterval(1000);
     }
     </script>    
 </head>
@@ -291,7 +288,6 @@
 
 <textarea cols="1" rows="1" id="math-txt">
     dif(f(x),x) = lim(Delta, 0, (f(x+Delta) - f(x)) / Delta );
-    u + v;
     (f + g)(x) = f(x) + g(x);
     var a : int, b : int;
     sqrt(x/y) * int(x, (a*b)/(a+b), N, 2 * sqrt(x/y))
@@ -299,6 +295,14 @@
     y(x, w) = sum(j, 0, M, w[j] * x^j) + (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2) 
         = E[RMS] = sqrt((2 * E(w__lowast))/N)
         = E__tilde(w) = (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2) + (lambda/2) * norm(w)^2;
+        dif((f*g)(x),x) = lim(Delta, 0, ((f*g)(x+Delta) - (f*g)(x)) / Delta )
+        = lim(Delta, 0, (f(x+Delta)*g(x+Delta) - f(x)*g(x)) / Delta )
+        = lim(Delta, 0, (f(x+Delta)*g(x+Delta) - f(x+Delta)*g(x) + f(x+Delta)*g(x) - f(x)*g(x)) / Delta )
+        = lim(Delta, 0, (f(x+Delta)*g(x+Delta) - f(x+Delta)*g(x)) / Delta ) + lim(Delta, 0, ( f(x+Delta)*g(x) - f(x)*g(x) ) / Delta );
+    lim(Delta, 0, f(x+Delta)*((g(x+Delta) - g(x)) / Delta)) + lim(Delta, 0, ( f(x+Delta) - f(x) ) / Delta )*g(x)
+        = lim(Delta, 0, f(x+Delta)) * lim(Delta, 0, (g(x+Delta) - g(x)) / Delta) + lim(Delta, 0, ( f(x+Delta) - f(x) ) / Delta )*g(x)
+        = f(x) * dif(g(x),x) + dif(f(x),x) * g(x);
+        
 </textarea>
     
 </body>
