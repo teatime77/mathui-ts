@@ -9,6 +9,7 @@
     <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
     <script type="text/javascript" src="./src/main.js?ver=226"></script>
     <script type="text/javascript">
+    var typeset_done = false;
 
     function element(id){
         return document.getElementById(id);
@@ -41,88 +42,16 @@
         document.body.appendChild(document.createElement("hr"));
     }
 
-    function* generator(){
+    function* moveTo(src, dst){
+        var src_rc = src.getBoundingClientRect();
 
-        var lex = new Lex();
-        var parser = new Parser();
-
-        var token_list = lex.lexicalAnalysis( element("math-txt").value );
-        var stmt_list = parser.parse(token_list);
-
-        var text = stmt_list.map(x => x.mathML()).join("<mspace linebreak='newline' />");
-        mmlDiv(text);
-        hr();
-
-        mmlDiv(stmt_list[0].clone().mathML());
-        hr();
-
-        var sc = new SymbolicComputation();
-        var t1 = stmt_list[0].clone();
-        var uv = stmt_list[1];
-
-        // x -> u + v
-        t1.setDisplayText();
-        sc.SubstByName(t1, "x", uv);
-        mmlDiv(t1.mathML());
-        hr();
-
-        // f -> g
-        t1 = stmt_list[0].clone();
-        t1.setDisplayText();
-        sc.SubstByName(t1, "f", new Reference("g"));
-        mmlDiv(t1.mathML());
-        hr();
-
-        // f -> u + v
-        t1 = stmt_list[0].clone();
-        t1.setDisplayText();
-        sc.SubstByName(t1, "f", uv);
-        mmlDiv(t1.mathML());
-        hr();
-
-
-        // u + v -> F * G
-        var FG = parse("F * G;");
-        t1 = t1.clone();
-        t1.setDisplayText();
-        sc.ReplaceTerm(t1, uv, FG);
-        mmlDiv(t1.mathML());
-        hr();
-
-        yield;
-
-        MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
-
-
-        var src = mmlDiv(element("src-txt").value);
-        hr();
-
-        yield;
-
-        MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
-        yield;
-
-        var dst = mmlDiv(element("dst-txt").value);
-        hr();
-
-        yield;
-
-        MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
-
-        var typeset_done = false;
-        MathJax.Hub.Queue(function(){
-            typeset_done = true;
-        });
-        while(! typeset_done){
-            yield;
-        }
-        console.log("typeset done");
-
-        var x1 = element("x1");
-        var rc1 = x1.getBoundingClientRect();
+        var rc1 = dst.getBoundingClientRect();
 
         var div = src.cloneNode(true);
         div.style.position = "absolute";
+        div.style.left = src_rc.x + "px";
+        div.style.top  = src_rc.y + "px";
+        
         document.body.appendChild(div);
         var rc2 = div.getBoundingClientRect();
 
@@ -159,6 +88,95 @@
 
             yield;
         }
+        div.parentNode.removeChild(div);
+        popInterval();
+    }
+
+    function waitTypeset(){
+        typeset_done = false;
+        MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
+        MathJax.Hub.Queue(function(){
+            typeset_done = true;
+        });
+    }
+
+    function* generator(){
+
+        var lex = new Lex();
+        var parser = new Parser();
+
+        var token_list = lex.lexicalAnalysis( element("math-txt").value );
+        var stmt_list = parser.parse(token_list);
+
+        var text = stmt_list.map(x => x.mathML()).join("<mspace linebreak='newline' />");
+        mmlDiv(text);
+        hr();
+
+        mmlDiv(stmt_list[0].clone().mathML());
+        hr();
+
+        var sc = new SymbolicComputation();
+        var t1 = stmt_list[0].clone();
+        var uv = stmt_list[1];
+
+        // x -> u + v
+        t1.setDisplayText();
+        sc.SubstByName(t1, "x", uv);
+        var t1_div = mmlDiv(t1.mathML());
+        hr();
+        for(waitTypeset(); ! typeset_done; yield);
+        console.log("x -> u + v");
+
+        // f -> g
+        var t2 = stmt_list[0].clone();
+        t2.setDisplayText();
+        sc.SubstByName(t2, "f", new Reference("g"));
+        mmlDiv(t2.mathML());
+        hr();
+        for(waitTypeset(); ! typeset_done; yield);
+        console.log("f -> g");
+
+        // f -> u + v
+        var t3 = stmt_list[0].clone();
+        t3.setDisplayText();
+        sc.SubstByName(t3, "f", uv);
+        mmlDiv(t3.mathML());
+        hr();
+        for(waitTypeset(); ! typeset_done; yield);
+        console.log("f -> u + v");
+
+
+        // u + v -> F * G
+        var FG = parse("F * G;");
+        var t4 = t3.clone();
+        t4.setDisplayText();
+        sc.ReplaceTerm(t4, uv, FG);
+        mmlDiv(t4.mathML());
+        hr();
+
+        for(waitTypeset(); ! typeset_done; yield);
+        console.log("");
+
+        var refs = sc.RefsByName(t4, "x");
+        console.log(refs.map(x => element(x.id)));
+        for(let e of refs.map(x => element(x.id))){
+            e.style.color = "red";
+        }
+        for(var it = moveTo(t1_div, element(refs[0].id)); ! it.next().done; yield);
+        yield;
+
+        var src = mmlDiv(element("src-txt").value);
+        src.style.transform = "scale(1,1)";
+        hr();
+        for(waitTypeset(); ! typeset_done; yield);
+        console.log("src-txt");
+
+        var dst = mmlDiv(element("dst-txt").value);
+        hr();
+        for(waitTypeset(); ! typeset_done; yield);
+        console.log("dst-txt");
+
+        for(var it = moveTo(src, element("x1")); ! it.next().done; yield);
     }
 
     var timerId = null;
@@ -195,7 +213,7 @@
     function BodyOnLoad(){
         iterator = generator();
 
-        pushInterval(1000);
+        pushInterval(2000);
     }
     </script>    
 </head>
@@ -274,12 +292,13 @@
 <textarea cols="1" rows="1" id="math-txt">
     dif(f(x),x) = lim(Delta, 0, (f(x+Delta) - f(x)) / Delta );
     u + v;
-    sqrt(x/y) * int(x, (a*b)/(a+b), N, 2 * sqrt(x/y));
+    (f + g)(x) = f(x) + g(x);
     var a : int, b : int;
-    - a[i,j] + 3 * a[i,j] -3 * a[i,j] + a / (b + c) + a[i] + p[i[j]] * 2 + abc + p[i,j] * 2 + sum(i, 0, N, p[i]);
-    y(x, w) = sum(j, 0, M, w[j] * x^j) + (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2);
-    E[RMS] = sqrt((2 * E(w__lowast))/N);
-    E__tilde(w) = (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2) + (lambda/2) * norm(w)^2;
+    sqrt(x/y) * int(x, (a*b)/(a+b), N, 2 * sqrt(x/y))
+        = - a[i,j] + 3 * a[i,j] -3 * a[i,j] + a / (b + c) + a[i] + p[i[j]] * 2 + abc + p[i,j] * 2 + sum(i, 0, N, p[i]);
+    y(x, w) = sum(j, 0, M, w[j] * x^j) + (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2) 
+        = E[RMS] = sqrt((2 * E(w__lowast))/N)
+        = E__tilde(w) = (1 / 2) * sum(n, 1, N, (y(x[n],w) - t[n])^2) + (lambda/2) * norm(w)^2;
 </textarea>
     
 </body>

@@ -301,6 +301,24 @@ class SymbolicComputation {
         this.TraverseRep(root, fnc, name, new_term);
     }
 
+    /*
+        指定した名前の変数参照のリストを返す。
+    */
+    RefsByName(root: Term, name: string) : Reference[] {
+        var fnc = function(current: Term, name: string, refs: Reference[]){
+            if(current instanceof Reference && current.name == name){
+                // 指定した名前の変数参照の場合
+
+                refs.push(current);
+            }
+        }
+
+        var refs: Reference[] = [];
+
+        this.Traverse(root, fnc, name, refs);
+
+        return refs;
+    }
 
     /*
         検索対象の項を指定した項に置換します。

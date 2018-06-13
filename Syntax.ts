@@ -203,7 +203,17 @@ class ArrayType extends Class {
     }
 }
 
+
+var objCount = 0;
+
 class Statement {
+    id : string;
+
+    constructor(){
+        this.id = "" + objCount;
+        objCount++;
+    }
+
     makeUI(ctx : ContextUI) : ElementUI{
         return null;
     }
@@ -332,7 +342,7 @@ class Constant extends Term {
     }
 
     mathML(){
-        return format("<mn>$1</mn>", "" + this.value);
+        return format("<mn id='$1'>$2</mn>", this.id, "" + this.value);
     }
 }
 
@@ -452,7 +462,6 @@ class Reference extends Term {
         return tex_name;
     }
 
-
     mathMLSub(){
         var name = toMathMLName(this.name);
 
@@ -468,9 +477,9 @@ class Reference extends Term {
                 idx = format("<mrow>$1</mrow>", mmls.join("<mo>,</mo>"));
             }
 
-            return format("<msub><mi>$1</mi> $2</msub>", name, idx);
+            return format("<msub id='$1'><mi>$2</mi> $3</msub>", this.id, name, idx);
         }
-        return format("<mi>$1</mi>", name);
+        return format("<mi id='$1'>$2</mi>", this.id, name);
     }    
 }
 
@@ -801,10 +810,10 @@ class Apply extends Term {
         var s = this.mathMLSub2();
 
         if(this.withParenthesis){
-            return format("<mfenced>$1</mfenced>", s);
+            return format("<mfenced id='$1'>$2</mfenced>", this.id, s);
         }
         else{
-            return s;
+            return s.replace(">", " id='" + this.id + "'>");
         }
     }
 
@@ -845,7 +854,7 @@ class VariableDeclaration extends Statement {
         }
         else{
 
-            return format("<mrow>$1</mrow>", this.variables.map(x => x.mathML()).join("<mo>,</mo>"));
+            return format("<mrow id='$1'>$2</mrow>", this.id, this.variables.map(x => x.mathML()).join("<mo>,</mo>"));
         }
     }
 }

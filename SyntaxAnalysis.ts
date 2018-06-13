@@ -241,7 +241,17 @@ class Parser {
             var term : Term = this.readExpression();
             this.getToken(")");
 
-            return term;
+            if(this.currentToken.text != "(") {
+
+                // 変数参照を返します。
+                return term;
+            }
+
+            // 実引数を読みます。
+            var args : Term[] = this.readArgs();
+
+            // 関数適用を返します。
+            return new Apply(term, args);
         }
         else {
             throw new SyntaxException();
