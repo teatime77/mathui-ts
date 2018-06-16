@@ -260,7 +260,28 @@ class Term extends Statement {
     isMulFnc(){
         return this instanceof Reference && this.varRef == MulFnc;
     }
-        
+
+    findById(id: string){
+        if(this.id == id || this.metaId == id){
+            return this;
+        }
+        if(this instanceof Apply){
+            var t = this.functionApp.findById(id);
+            if(t != null){
+                return t;
+            }
+            for(let arg of this.args){
+
+                t = arg.findById(id);
+                if(t != null){
+                    return t;
+                }
+            }
+        }
+
+        return null;
+    }
+    
     replace(old_term: Term, new_term: Term){
     }
 
