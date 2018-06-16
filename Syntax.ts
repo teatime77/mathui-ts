@@ -233,7 +233,7 @@ class Term extends Statement {
 
     displayText: string;
 
-    metaId : string;
+    metaId : string = undefined;
 
     setDisplayText() : string {
         console.assert(false);
@@ -286,24 +286,41 @@ class Term extends Statement {
     }
 
 
-    mathMLSub(){
+    mathML(){
         console.assert(false);
     }
 
-    mathML(){
-        var s = this.mathMLSub();
-
+    mulVal(s){
         if(this.value == 1){
             return s;
         }
-        else if(this.value == -1){
-            return format("<mrow><mo>-</mo> $1</mrow>", s);
-        }
         else{
-            return format("<mrow><mn>$1</mn> <mo>&middot;</mo> $2</mrow>", "" + this.value, s);
+
+            if(this instanceof Apply && this.functionApp instanceof Reference){
+                var app_name = this.functionApp.name;
+                if(app_name == "+" || app_name == "-"){
+
+                    s = format("<mfenced>$1</mfenced>", s);
+                }
+            }
+
+            if(this.value == -1){
+
+                return format("<mrow><mo>-</mo> $1</mrow>", s);
+            }
+            else{
+                return format("<mrow><mn>$1</mn> <mo>&middot;</mo> $2</mrow>", "" + this.value, s);
+            }
         }
     }
     
+    mmlMetaId(s: string){
+        if(this.metaId == undefined){
+            return s.replace(">", " id='" + this.id + "'>");
+        }
+
+        return s.replace(">", " id='" + this.metaId + "'>");
+    }
 }
 
 /*
@@ -464,9 +481,10 @@ class Reference extends Term {
         return tex_name;
     }
 
-    mathMLSub(){
+    mathML(){
         var name = toMathMLName(this.name);
 
+        var mml: string;
         if (this.indexes != null){
             var mmls = this.indexes.map(x => x.mathML());
 
@@ -475,13 +493,17 @@ class Reference extends Term {
                 idx = mmls[0];
             }
             else{
-//                idx = format("<mfenced>$1</mfenced>", mmls.join(""));//<mo>,</mo>
                 idx = format("<mrow>$1</mrow>", mmls.join("<mo>,</mo>"));
             }
 
-            return format("<msub id='$1'><mi>$2</mi> $3</msub>", this.id, name, idx);
+            mml = format("<msub><mi>$1</mi> $2</msub>", name, idx);
         }
-        return format("<mi id='$1'>$2</mi>", this.id, name);
+        else{
+
+            mml = format("<mi>$1</mi>", name);
+        }
+
+        return this.mmlMetaId( this.mulVal(mml) );
     }    
 }
 
@@ -808,15 +830,14 @@ class Apply extends Term {
         return format("<mrow> <mfenced> $1 </mfenced> <mfenced> $2 </mfenced></mrow>", this.functionApp.mathML(), texs.join(""));
     }
 
-    mathMLSub(){
+    mathML(){
         var s = this.mathMLSub2();
 
         if(this.withParenthesis){
-            return format("<mfenced id='$1'>$2</mfenced>", this.id, s);
+            s = format("<mfenced>$1</mfenced>", s);
         }
-        else{
-            return s.replace(">", " id='" + this.id + "'>");
-        }
+
+        return this.mmlMetaId( this.mulVal(s) );
     }
 }
 

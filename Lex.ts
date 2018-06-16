@@ -142,13 +142,13 @@ class Lex{
                     sub_type = TokenSubType.integer;
                 }
             }
-            else if (ch1 == '$' && isDigit(ch2)) {
+            else if (ch1 == '#' && isDigit(ch2)) {
                 // $の後ろに数字がある場合
 
                 token_type = TokenType.metaId;
                 
                 // 10進数の終わりを探します。
-                for (pos++; pos < text.length && isDigit(text[pos]); pos++);
+                for (pos++; pos < text.length && (isDigit(text[pos]) || text[pos] == '.'); pos++);
             }
             else if (SymbolTable.indexOf("" + ch1 + ch2) != -1) {
                 // 2文字の記号の表にある場合

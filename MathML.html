@@ -6,9 +6,16 @@
     <script src="https://www.promisejs.org/polyfills/promise-7.0.4.min.js"></script>
     <script data-main="./src/main" src="require.js"></script>
 
-    <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            extensions: [ "tex2jax.js", "mml2jax.js" ],
+            jax: ["input/TeX", "input/MathML", "output/SVG"],
+        })
+    </script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=default"></script>
     <script type="text/javascript" src="./src/main.js?ver=226"></script>
-    <script type="text/javascript">
+<script type="text/javascript">
     var typeset_done = false;
 
     function element(id){
@@ -48,11 +55,15 @@
         var rc1 = dst.getBoundingClientRect();
 
         var div = src.cloneNode(true);
+//        var style = window.getComputedStyle(src);
         div.style.position = "absolute";
         div.style.left = src_rc.x + "px";
         div.style.top  = src_rc.y + "px";
+//        div.style.width  = style.width;
+//        div.style.height  = style.height;
         
         document.body.appendChild(div);
+        yield;
         var rc2 = div.getBoundingClientRect();
 
         var sc = Math.max(rc1.width / rc2.width, rc1.height / rc2.height);
@@ -100,10 +111,87 @@
         });
     }
 
+    function setColor(color, ...ids){
+        for(let id of ids){
+            element(id).style.color = color;
+        }
+    }
+
+    var divs = [];
+
+    function remove(idx){
+        if(idx < 0){
+            idx += divs.length;
+        }
+        var div = divs[idx];
+        div.parentNode.removeChild(div);
+    }
+
+    function msg(txt){
+        var span = document.createElement("span");
+        span.innerText = txt;
+        document.body.appendChild(span);
+        document.body.appendChild(document.createElement("br"));
+    }
+
+    function* scaleUp(div){
+        var r = 0.01;
+        pushInterval(1);
+        for(var i = 0; i < 100; i++){
+
+            r += 0.01;
+
+            div.style.transform = "scale(" + r + "," + r + ")";
+
+            yield;
+        }
+        popInterval();
+    }
+
     function* generator(){
 
         var lex = new Lex();
         var parser = new Parser();
+
+        // 積の微分
+        pushInterval(1000);
+        for(var line of element("mul-dif").value.split('\n')){
+            line = line.trim();
+            if(line == ""){
+
+                yield;
+                continue;
+            }
+            if(line[0] == '$'){
+                eval(line.substring(1).trim());
+            }
+            else if(line[0] == '#'){
+                pushInterval(3000);
+                for(waitTypeset(); ! typeset_done; yield);
+                popInterval();
+                
+                var ids = line.split("-");
+                for(var it = moveTo(element(ids[0].trim()), element(ids[1].trim())); ! it.next().done; yield);
+            }           
+            else{
+
+                var stmt = parse(line);
+
+                var div = mmlDiv( stmt.mathML() );
+                div.style.transform = "scale(0.01, 0.01)";
+
+                divs.push(div);
+                pushInterval(1);
+                for(waitTypeset(); ! typeset_done; yield);
+                popInterval();
+
+                for(var it = scaleUp(div); ! it.next().done; yield);
+                
+            }
+        }
+        popInterval();
+
+
 
         var token_list = lex.lexicalAnalysis( element("math-txt").value );
         var stmt_list = parser.parse(token_list);
@@ -175,16 +263,7 @@
         mmlDiv(text);
         hr();
         for(waitTypeset(); ! typeset_done; yield);
-
-        // 積の微分
-        token_list = lex.lexicalAnalysis( element("mul-dif").value );
-        pushInterval(1000);
-        for(let stmt of parser.parse(token_list)){
-            mmlDiv( stmt.mathML() );
-            for(waitTypeset(); ! typeset_done; yield);
-        }
-        popInterval();
-}
+    }
 
     var timerId = null;
     var timerIntervals = [];
@@ -213,7 +292,7 @@
         timerIntervals.pop();
         clearInterval(timerId);
         
-        var interval = timerIntervals.pop();
+        var interval = timerIntervals[timerIntervals.length - 1];
         timerId = setInterval(timerFnc, interval);
     }
 
@@ -222,11 +301,47 @@
 
         pushInterval(1000);
     }
-    </script>    
+</script>    
 </head>
 <body onload="BodyOnLoad()">
 
-<textarea cols="1" rows="1" id="src-txt">
+
+<!--
+    (f*g)(x+Delta) = #1.2{f(x+Delta)*g(x+Delta)} / 3;
+    
+    #1.2-#3
+
+    3 * (a + b);
+-->
+
+<textarea style="display: none" cols="1" rows="1" id="mul-dif">
+    dif((f*g)(x),x);
+
+    lim(Delta, 0, ( #1.1{(f*g)(x+Delta)} - #1.2{(f*g)(x)} ) / Delta );
+
+    $ msg("関数の積の定義");
+    $ setColor("red", "#1.1", "#1.2");
+
+    lim(Delta, 0, ( (f*g)( #3{x} +Delta) - (f*g)(x) ) / Delta );
+
+    lim(Delta, 0, (#2.1{f(x+Delta)*g(x+Delta)} - #2.2{f(x)*g(x)}) / Delta );
+    $ setColor("red", "#2.1", "#2.2");
+
+    $ setColor("black", "#2.1", "#2.2");
+
+    lim(Delta, 0, (f(x+Delta)*g(x+Delta) - #3.1{f(x+Delta)*g(x)} + #3.2{f(x+Delta)*g(x)} - f(x)*g(x)) / Delta );
+    $ setColor("red", "#3.1", "#3.2");
+
+    lim(Delta, 0, (f(x+Delta)*g(x+Delta) - f(x+Delta)*g(x)) / Delta ) + lim(Delta, 0, ( f(x+Delta)*g(x) - f(x)*g(x) ) / Delta );
+
+    lim(Delta, 0, f(x+Delta)*((g(x+Delta) - g(x)) / Delta)) + lim(Delta, 0, ( f(x+Delta) - f(x) ) / Delta )*g(x);
+
+    lim(Delta, 0, f(x+Delta)) * lim(Delta, 0, (g(x+Delta) - g(x)) / Delta) + lim(Delta, 0, ( f(x+Delta) - f(x) ) / Delta )*g(x);
+
+    f(x) * dif(g(x),x) + dif(f(x),x) * g(x);
+</textarea>
+
+<textarea style="display: none" cols="1" rows="1" id="src-txt">
     <mi>X</mi>
     <mo>=</mo>
     <mn>8</mn>
@@ -236,7 +351,7 @@
     </mfrac>
 </textarea>
 
-<textarea cols="1" rows="1" id="dst-txt">
+<textarea style="display: none" cols="1" rows="1" id="dst-txt">
     <msqrt>
         <mn>2</mn>
     </msqrt>
@@ -296,18 +411,7 @@
     <mi>X</mi>
 </textarea>
 
-<textarea cols="1" rows="1" id="mul-dif">
-    dif((f*g)(x),x);
-    lim(Delta, 0, ($1{(f*g)(x+Delta)} - (f*g)(x)) / Delta );
-    lim(Delta, 0, (f(x+Delta)*g(x+Delta) - f(x)*g(x)) / Delta )
-    = lim(Delta, 0, (f(x+Delta)*g(x+Delta) - f(x+Delta)*g(x) + f(x+Delta)*g(x) - f(x)*g(x)) / Delta )
-    = lim(Delta, 0, (f(x+Delta)*g(x+Delta) - f(x+Delta)*g(x)) / Delta ) + lim(Delta, 0, ( f(x+Delta)*g(x) - f(x)*g(x) ) / Delta );
-lim(Delta, 0, f(x+Delta)*((g(x+Delta) - g(x)) / Delta)) + lim(Delta, 0, ( f(x+Delta) - f(x) ) / Delta )*g(x)
-    = lim(Delta, 0, f(x+Delta)) * lim(Delta, 0, (g(x+Delta) - g(x)) / Delta) + lim(Delta, 0, ( f(x+Delta) - f(x) ) / Delta )*g(x)
-    = f(x) * dif(g(x),x) + dif(f(x),x) * g(x);
-</textarea>
-
-<textarea cols="1" rows="1" id="math-txt">
+<textarea style="display: none" cols="1" rows="1" id="math-txt">
     dif(f(x),x) = lim(Delta, 0, (f(x+Delta) - f(x)) / Delta );
     (f + g)(x) = f(x) + g(x);
     var a : int, b : int;
