@@ -489,10 +489,3 @@ class Parser {
         }
     }
 }
-
-var currentParser : Parser;
-
-function parse(text: string){
-    currentParser.initParse(currentLex.lexicalAnalysis(text));
-    return currentParser.readStatement();
-}

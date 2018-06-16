@@ -214,7 +214,20 @@ class Statement {
         objCount++;
     }
 
+    /*
+        コピーを返します。
+    */
+    clone(var_tbl: Map<Variable, Variable> = null) : Statement {
+        console.assert(false);
+        return null;
+    }
+
     makeUI(ctx : ContextUI) : ElementUI{
+        return null;
+    }
+
+    mathML() : string {
+        console.assert(false);
         return null;
     }
 }
@@ -260,7 +273,7 @@ class Term extends Statement {
         return this == t || this.displayText == t.displayText;
     }
 
-    clone(var_tbl): Term {
+    clone(var_tbl: Map<Variable, Variable> = null): Term {
         return null;
     }
 
