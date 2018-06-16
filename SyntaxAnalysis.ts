@@ -357,30 +357,29 @@ class Parser {
         // 乗算/除算の式を読みます。
         var t1 : Term = this.multiplicativeExpression();
 
-        while (this.currentToken.text == "+" || this.currentToken.text == "-") {
-            // 現在の演算子を保存します。
-            var opr : string = this.currentToken.text;
+        if(this.currentToken.text == "+" || this.currentToken.text == "-") {
 
             var args : Term[] = new Array<Term>();
             args.push(t1);
 
-            while(this.currentToken.text == opr) {
+            while(this.currentToken.text == "+" || this.currentToken.text == "-") {
                 // 現在のトークンが保存した演算子と同じ場合
+
+                // 現在の演算子を保存します。
+                var opr : string = this.currentToken.text;
 
                 this.getToken(opr);
 
                 // 乗算/除算の式を読みます。
-                args.push( this.multiplicativeExpression() );
-            }
+                var t2 = this.multiplicativeExpression();
 
-            if(opr == "-") {
-                // 減算の場合
+                if(opr == "-") {
+                    // 減算の場合
 
-                // 2番目以降の項の符号を反転します。
-                for (var i : number = 1; i < args.length; i++) {
-
-                    args[i].value *= -1;
+                    t2.value *= -1;
                 }
+
+                args.push( t2 );
             }
 
             // 加算の関数適用を作ります。

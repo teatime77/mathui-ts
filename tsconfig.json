@@ -20,6 +20,7 @@
         "Syntax.ts",
         "SyntaxAnalysis.ts",
         "ui.ts",
+        "util.ts",
         "SymbolicComputation.ts"
     ]    
 }

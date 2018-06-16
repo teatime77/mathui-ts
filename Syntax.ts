@@ -131,7 +131,7 @@ class Variable {
         return toTexName(this.name) + " \\in " + this.typeVar.tex();
     }
 
-    mathML(){
+    mathML() : string {
         return format("<mrow><mi>$1</mi><mo>&isin;</mo>$2</mrow>", toMathMLName(this.name), this.typeVar.mathML());
     }
 }
@@ -169,7 +169,7 @@ class Class {
         return this.name;
     }
 
-    mathML(){
+    mathML() : string {
         return format("<mi>$1</mi>", this.name);
     }
 }
@@ -235,6 +235,17 @@ class Term extends Statement {
 
     metaId : string = undefined;
 
+    strVal(s: string){
+        switch(this.value){
+        case 1:
+            return s;
+        case -1:
+            return "- " + s;
+        default:
+            return this.value + " * " + s;
+        }
+    }
+
     setDisplayText() : string {
         console.assert(false);
         return this.displayText;
@@ -252,6 +263,11 @@ class Term extends Statement {
     clone(var_tbl): Term {
         return null;
     }
+
+    isOpr() : boolean {
+        return this instanceof Apply && this.functionApp instanceof Reference && ! isAlpha(this.functionApp.name[0]);
+    }
+
 
     isAddFnc(){
         return this instanceof Reference && this.varRef == AddFnc;
@@ -307,8 +323,9 @@ class Term extends Statement {
     }
 
 
-    mathML(){
+    mathML() : string {
         console.assert(false);
+        return null;
     }
 
     mulVal(s){
@@ -381,7 +398,7 @@ class Constant extends Term {
         return "" + this.value;
     }
 
-    mathML(){
+    mathML() : string {
         return format("<mn id='$1'>$2</mn>", this.id, "" + this.value);
     }
 }
@@ -413,10 +430,17 @@ class Reference extends Term {
     }
 
     setDisplayText() : string {
-        this.displayText = this.name;
+        var s = this.name;
         if(this.indexes != null){            
-            this.displayText += "[" + this.indexes.map(x => x.setDisplayText()).join(",") + "]";
+            s += "[" + this.indexes.map(x => x.setDisplayText()).join(",") + "]";
         }
+
+        if(this.metaId != undefined){
+
+            s = format("$1{$2}", this.metaId, s);
+        }
+
+        this.displayText = this.strVal(s);
         return this.displayText;
     }
 
@@ -502,7 +526,7 @@ class Reference extends Term {
         return tex_name;
     }
 
-    mathML(){
+    mathML() : string {
         var name = toMathMLName(this.name);
 
         var mml: string;
@@ -554,7 +578,98 @@ class Apply extends Term {
     }
 
     setDisplayText() : string {
-        this.displayText = "(" + this.functionApp.setDisplayText() + ")(" + this.args.map(x => x.setDisplayText()).join(",") + ")";
+        this.displayText    = undefined;
+
+        this.functionApp.setParenthesis();
+        this.functionApp.setDisplayText();
+
+        this.args.map(x => x.setParenthesis());
+        var texs = this.args.map(x => x.setDisplayText());
+
+        if(this.functionApp instanceof Reference){
+
+            switch(this.functionApp.name){
+            case "^":
+                var arg1 = this.args[0];
+                var with_parenthesis = false;
+                if(arg1 instanceof Apply){
+                    if(arg1.functionApp instanceof Reference){
+
+                        switch(arg1.functionApp.name){
+                        case "*":
+                        case "/":
+                        case "+":
+                        case "-":
+                            with_parenthesis = true;
+                            break;
+                        }
+                    }
+                    else{
+
+                        with_parenthesis = true;
+                    }
+                }
+
+                if(with_parenthesis){
+
+                    this.displayText = format("($1)^$2", texs);
+                }
+                else{
+                    this.displayText = format("$1^$2", texs);
+                }
+                break;
+            case "*":
+            case "/":
+            case "=":
+            case "!=":
+            case "<":
+            case "<=":
+            case ">":
+            case ">=":
+                this.displayText = texs.join(" " + this.functionApp.name + " ");
+                break;
+            case "+":
+                var s = "";
+                for(let [idx, arg] of this.args.entries()){
+                    if(0 < idx){
+                        if(0 <= arg.value){
+
+                            s += " + ";
+                        }
+                        else{
+
+                            s += " ";
+                        }
+                    }
+                    s += texs[idx];
+                }
+                this.displayText = s;
+                break;
+            default:
+                this.displayText = format("$1($2)", this.functionApp.setDisplayText(), texs.join(", "));
+                break;
+            }
+        }
+        else{
+
+            this.displayText = format("($1)($2)", this.functionApp.setDisplayText(), texs.join(", "));
+        }
+
+
+        console.assert(this.displayText != undefined);
+
+        if(this.withParenthesis){
+
+            this.displayText = "(" + this.displayText + ")";
+        }
+
+        if(this.metaId != undefined){
+
+            this.displayText = format("$1{$2}", this.metaId, this.displayText);
+        }
+
+        this.displayText = this.strVal(this.displayText);
+
         return this.displayText;
     }
 
@@ -710,7 +825,12 @@ class Apply extends Term {
     }
 
     setParenthesis(){
-        if(this.parent instanceof Apply && this.parent.getPrecedence() <= this.getPrecedence()){
+        this.functionApp.setParenthesis();
+        for(let arg of this.args){
+            arg.setParenthesis();
+        }
+
+        if(this.isOpr() && this.parent instanceof Apply && this.parent.isOpr() && this.parent.getPrecedence() <= this.getPrecedence()){
             this.withParenthesis = true;
         }
         else{
@@ -851,7 +971,7 @@ class Apply extends Term {
         return format("<mrow> <mfenced> $1 </mfenced> <mfenced> $2 </mfenced></mrow>", this.functionApp.mathML(), texs.join(""));
     }
 
-    mathML(){
+    mathML() : string {
         var s = this.mathMLSub2();
 
         if(this.withParenthesis){
@@ -890,7 +1010,7 @@ class VariableDeclaration extends Statement {
         return this.variables.map(x => x.tex()).join(",");
     }
 
-    mathML(){
+    mathML() : string {
         if(this.variables.length == 1){
             return this.variables[0].mathML();
         }
