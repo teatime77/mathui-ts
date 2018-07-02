@@ -1,3 +1,5 @@
+namespace MathUI {
+
 function format(str: string, ...args){
     var ret = str;
 
@@ -83,7 +85,7 @@ function toMathMLName(name : string){
     }
 }
 
-class Variable {
+export class Variable {
     // 親
     parentVar : object;
 
@@ -151,7 +153,7 @@ class Func extends Variable {
     }
 }
 
-class Class {    
+export class Class {    
     name : string;
 
     // 次元 (スカラーは0,  1次元配列は1,  2次元配列は2, ... )
@@ -174,25 +176,25 @@ class Class {
     }
 }
 
-var IntClass : Class = new Class("int");
-var RealClass : Class = new Class("real");
-var AddFnc : Func = new Func("+", null);
-var MulFnc : Func = new Func("*", null);
-var DivFnc : Func = new Func("/", null);
-var PowFnc : Func = new Func("^", null);
-var EqRel : Func = new Func("=", null);
-var NeRel : Func = new Func("!=", null);
-var GtRel : Func = new Func(">", null);
-var GeRel : Func = new Func(">=", null);
-var LtRel : Func = new Func("<", null);
-var LeRel : Func = new Func("<=", null);
+export var IntClass : Class = new Class("int");
+export var RealClass : Class = new Class("real");
+export var AddFnc : Func = new Func("+", null);
+export var MulFnc : Func = new Func("*", null);
+export var DivFnc : Func = new Func("/", null);
+export var PowFnc : Func = new Func("^", null);
+export var EqRel : Func = new Func("=", null);
+export var NeRel : Func = new Func("!=", null);
+export var GtRel : Func = new Func(">", null);
+export var GeRel : Func = new Func(">=", null);
+export var LtRel : Func = new Func("<", null);
+export var LeRel : Func = new Func("<=", null);
 
 
 
 /*
     配列の型
 */
-class ArrayType extends Class {
+export class ArrayType extends Class {
     // 要素の型
     elementType:Class;
 
@@ -206,7 +208,7 @@ class ArrayType extends Class {
 
 var objCount = 0;
 
-class Statement {
+export class Statement {
     id : string;
 
     constructor(){
@@ -232,7 +234,7 @@ class Statement {
     }
 }
 
-class Term extends Statement {
+export class Term extends Statement {
     // 親
     parent : object;
 
@@ -288,6 +290,10 @@ class Term extends Statement {
 
     isMulFnc(){
         return this instanceof Reference && this.varRef == MulFnc;
+    }
+
+    isFncRefApp(name : string) : boolean {
+        return this instanceof Apply && this.functionApp instanceof Reference && (name == undefined || this.functionApp.name == name);
     }
 
     findById(id: string){
@@ -377,7 +383,7 @@ class Term extends Statement {
 /*
     数値定数
 */
-class Constant extends Term {
+export class Constant extends Term {
     constructor(value : number, type_term : Class) {
         super();
 
@@ -416,7 +422,7 @@ class Constant extends Term {
     }
 }
 
-class Reference extends Term {
+export class Reference extends Term {
     // 変数名
     name : string;
 
@@ -568,7 +574,7 @@ class Reference extends Term {
 /*
     関数適用
 */
-class Apply extends Term {
+export class Apply extends Term {
     // 関数
     functionApp : Term;
 
@@ -998,7 +1004,7 @@ class Apply extends Term {
 /*
     変数宣言文
 */
-class VariableDeclaration extends Statement {
+export class VariableDeclaration extends Statement {
     variables : Variable[];
 
     constructor(variables : Variable[]){
@@ -1044,4 +1050,5 @@ class StatementFlow {
     makeUI(ctx : ContextUI) : VerticalBlock{
         return new VerticalBlock(this, ctx, this.statements).layoutVertical();
     }
+}
 }

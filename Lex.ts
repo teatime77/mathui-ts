@@ -1,12 +1,75 @@
+namespace MathUI {
 
-enum TokenSubType {
+var SymbolTable : Array<string> = new  Array<string> (
+    ",",
+    ".",
+    ";",
+    "(",
+    ")",
+    "[",
+    "]",
+    "{",
+    "}",
+    "+",
+    "-",
+    "*",
+    "/",
+    "^",
+    "%",
+    "=",
+    ":",
+    "<",
+    ">",
+
+    "&&",
+    "||",
+
+    "+=",
+    "-=",
+    "*=",
+    "/=",
+    "%=",
+    "!=",
+
+    "++",
+    "--",
+
+    "!",
+    "&",
+    "|",
+    "?",
+);
+    
+var KeywordMap : Array<string> = new  Array<string> (
+);
+
+var IdList : Array<string> = new  Array<string> (
+);
+    
+function isWhiteSpace(c:string) : boolean {
+    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
+}
+
+function isLetter(s : string) : boolean {
+    return s.length === 1 && ("a" <= s && s <= "z" || "A" <= s && s <= "Z");
+}
+
+function isDigit(s : string) : boolean {
+    return s.length == 1 && "0123456789".indexOf(s) != -1;
+}
+
+function isLetterOrDigit(s : string) : boolean {
+    return isLetter(s) || isDigit(s);
+}
+    
+export enum TokenSubType {
     unknown,
     integer,
     float,
     double,
 }
 
-class Token{
+export class Token{
     typeTkn:TokenType;
     subType:TokenSubType;
     text:string;
@@ -23,7 +86,7 @@ class Token{
     }
 }
 
-class Lex{
+export class Lex{
     public constructor(){
         currentLex = this;
     }
@@ -188,4 +251,5 @@ class Lex{
     }
 }
 
-var currentLex : Lex;
+export var currentLex : Lex;
+}

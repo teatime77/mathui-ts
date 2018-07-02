@@ -1,3 +1,5 @@
+namespace MathUI {
+    
 var C_5 = 0.5;
 var CurrentUI : ElementUI = null;
 type MathComponent = string | Term | Statement | Variable | Class | ElementUI;
@@ -11,7 +13,7 @@ enum LayoutType {
     baseLine,
 }
 
-function joinMath(joint: MathComponent, args: MathComponent[]) : MathComponent[]{
+export function joinMath(joint: MathComponent, args: MathComponent[]) : MathComponent[]{
     var v = [];
 
     for(let arg of args){
@@ -159,7 +161,7 @@ class Vec2 {
 }
 
 
-class ContextUI {
+export class ContextUI {
     group : SVGGElement;
     rootUI: ElementUI;
     scales : Vec2[] = [ new Vec2(1, 1) ];
@@ -192,7 +194,7 @@ class ContextUI {
     }
 }
 
-class ElementUI {
+export class ElementUI {
     parentUI : BlockUI;
     context : ContextUI;
     border  : SVGRectElement;
@@ -222,7 +224,7 @@ class ElementUI {
     }
 }
 
-class BlockUI extends ElementUI {
+export class BlockUI extends ElementUI {
     layoutType : LayoutType;
     baseIdx    : number;
     children : ElementUI[] = new Array<ElementUI>();
@@ -394,7 +396,7 @@ class BlockUI extends ElementUI {
     }
 }
 
-class HorizontalBlock extends BlockUI {
+export class HorizontalBlock extends BlockUI {
     wordSpacing : number = 1;
 
     constructor(tag, ctx: ContextUI = null, args: MathComponent[] = null){
@@ -442,7 +444,7 @@ class HorizontalBlock extends BlockUI {
     }
 }
 
-class VerticalBlock extends BlockUI {
+export class VerticalBlock extends BlockUI {
     lineSpacing : number = 1;
 
     constructor(tag, ctx: ContextUI = null, args: MathComponent[] = null){
@@ -653,7 +655,7 @@ class TextUI extends ElementUI {
 }
 
 
-class LineUI extends ElementUI {
+export class LineUI extends ElementUI {
     absX      : number = 0;
     absY      : number = 0;
     line      : SVGLineElement;
@@ -691,4 +693,5 @@ class LineUI extends ElementUI {
     removeSVG(){
         this.line.parentElement.removeChild(this.line);
     }
+}
 }

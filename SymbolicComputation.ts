@@ -1,4 +1,5 @@
-﻿function One()  : Constant { 
+﻿namespace MathUI {
+function One()  : Constant { 
     return new Constant(1, IntClass); 
 }
 
@@ -15,7 +16,7 @@ function range(n: number): number[]{
     return v;
 }
 
-class SymbolicComputation {
+export class SymbolicComputation {
 
     /*
         LINQの微分
@@ -237,7 +238,7 @@ class SymbolicComputation {
         fnc(obj, ...args);
     }
 
-    TraverseRep(obj, fnc, ...args){
+    static TraverseRep(obj, fnc, ...args){
         if(obj == null){
             return null;
         }
@@ -266,7 +267,7 @@ class SymbolicComputation {
     /*
         変数に項を代入します。
     */
-    Subst(root: Term, subst_tbl : Map<Reference, Term>, var_tbl: Map<Variable, Variable> = null) {
+    static Subst(root: Term, subst_tbl : Map<Reference, Term>, var_tbl: Map<Variable, Variable> = null) {
         var fnc = function(t: Term, subst_tbl: Map<Reference, Term>, var_tbl: Map<Variable, Variable>){
             if(t instanceof Reference){
                 // 変数参照の場合
@@ -287,7 +288,7 @@ class SymbolicComputation {
     /*
         指定した名前の変数参照に項を代入します。
     */
-    SubstByName(root: Term, name: string, new_term: Term ) {
+    static SubstByName(root: Term, name: string, new_term: Term ) {
         var fnc = function(current: Term, name: string, new_term: Term){
             if(current instanceof Reference && current.name == name){
                 // 指定した名前の変数参照の場合
@@ -323,7 +324,7 @@ class SymbolicComputation {
     /*
         検索対象の項を指定した項に置換します。
     */
-    ReplaceTerm(root: Term, old_term: Term, new_term: Term ) {
+    static ReplaceTerm(root: Term, old_term: Term, new_term: Term ) {
         var fnc = function(current: Term, old_term: Term, new_term: Term){
             if(current.eq(old_term)){
                 // 検索対象の項と同じ場合
@@ -472,4 +473,5 @@ class SymbolicComputation {
             }) as Term;
     }
     */
+}
 }

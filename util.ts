@@ -1,3 +1,4 @@
+namespace MathUI {
 declare var MathJax:any;
 
 var timerId = null;
@@ -8,7 +9,7 @@ var iterator;
 var typeset_done = false;
 
 
-var currentParser : Parser;
+export var currentParser : Parser;
 
 function parse(text: string)  {
     currentParser.initParse(currentLex.lexicalAnalysis(text));
@@ -150,6 +151,7 @@ function* generator(){
 
     // 積の微分
     pushInterval(1000);
+    var prev_term : Term = undefined;
     for(var line of (element("mul-dif") as HTMLTextAreaElement).value.split('\n')){
         line = line.trim();
         if(line == ""){
@@ -177,6 +179,17 @@ function* generator(){
                 console.log("B:", line);
             }
 
+            if(stmt.isFncRefApp("rep")){
+
+                var app = stmt as Apply;
+
+                var prev_term_copy = prev_term.clone();
+                SymbolicComputation.ReplaceTerm(prev_term_copy, app.args[0], app.args[1]);
+                stmt = prev_term_copy;
+            }
+
+            prev_term = stmt;
+
             var div = mmlDiv2( stmt );
             div.style.transform = "scale(0.01, 0.01)";
 
@@ -201,7 +214,7 @@ function* generator(){
 
     // x -> u + v
     t1.setDisplayText();
-    sc.SubstByName(t1, "x", uv);
+    SymbolicComputation.SubstByName(t1, "x", uv);
     var t1_div = mmlDiv2(t1);
     hr();
     for(waitTypeset(); ! typeset_done; yield);
@@ -210,7 +223,7 @@ function* generator(){
     // f -> g
     var t2 = t0.clone();
     t2.setDisplayText();
-    sc.SubstByName(t2, "f", new Reference("g"));
+    SymbolicComputation.SubstByName(t2, "f", new Reference("g"));
     mmlDiv2(t2);
     hr();
     for(waitTypeset(); ! typeset_done; yield);
@@ -219,7 +232,7 @@ function* generator(){
     // f -> u + v
     var t3 = t0.clone();
     t3.setDisplayText();
-    sc.SubstByName(t3, "f", uv);
+    SymbolicComputation.SubstByName(t3, "f", uv);
     mmlDiv2(t3);
     hr();
     for(waitTypeset(); ! typeset_done; yield);
@@ -230,7 +243,7 @@ function* generator(){
     var FG = parseTerm("F * G;");
     var t4 = t3.clone();
     t4.setDisplayText();
-    sc.ReplaceTerm(t4, uv, FG);
+    SymbolicComputation.ReplaceTerm(t4, uv, FG);
     mmlDiv2(t4);
     hr();
 
@@ -264,13 +277,13 @@ function* generator(){
     for(waitTypeset(); ! typeset_done; yield);
 }
 
-function startGenerator(){
+export function startGenerator(){
     iterator = generator();
 
     pushInterval(1000);
 }
 
-function isAlpha(c) : boolean {
+export function isAlpha(c) : boolean {
     return 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z';
 }
 
@@ -385,4 +398,5 @@ function* moveTo2(src_id, dst){
     }
     div.parentNode.removeChild(div);
     popInterval();
+}
 }

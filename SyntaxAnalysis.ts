@@ -1,8 +1,10 @@
+namespace MathUI {
+
 class SyntaxException extends Error {
 
 }
 
-class Parser {
+export class Parser {
     tokenPos:number = 0;
     nextToken:Token = null;
     currentToken:Token = null;
@@ -488,4 +490,5 @@ class Parser {
             stmt_list.push(stmt);
         }
     }
+}
 }
