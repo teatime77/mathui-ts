@@ -213,7 +213,7 @@ export class SymbolicComputation {
         return null;
     }
 
-    Traverse(obj, fnc, ...args){
+    static Traverse(obj, fnc, ...args){
         if(obj == null){
             return;
         }
@@ -305,7 +305,7 @@ export class SymbolicComputation {
     /*
         指定した名前の変数参照のリストを返す。
     */
-    RefsByName(root: Term, name: string) : Reference[] {
+    static RefsByName(root: Term, name: string) : Reference[] {
         var fnc = function(current: Term, name: string, refs: Reference[]){
             if(current instanceof Reference && current.name == name){
                 // 指定した名前の変数参照の場合
@@ -322,20 +322,39 @@ export class SymbolicComputation {
     }
 
     /*
-        検索対象の項を指定した項に置換します。
+        指定した項と同じ項を探します。
     */
-    static ReplaceTerm(root: Term, old_term: Term, new_term: Term ) {
-        var fnc = function(current: Term, old_term: Term, new_term: Term){
-            if(current.eq(old_term)){
+    static FindTerm(root: Term, target: Term, eq_terms: Term[] ) {
+        var fnc = function(current: Term, target: Term, eq_terms: Term[]){
+            if(current.eq(target)){
                 // 検索対象の項と同じ場合
 
-                return new_term.clone(null);
+                eq_terms.push(current);
             }
 
             return current;
         }
 
-        this.TraverseRep(root, fnc, old_term, new_term);
+        this.Traverse(root, fnc, target, eq_terms);
+    }
+
+    /*
+        検索対象の項を指定した項に置換します。
+    */
+    static ReplaceTerm(root: Term, old_term: Term, new_term: Term, clone_terms: Term[] ) {
+        var fnc = function(current: Term, old_term: Term, new_term: Term, clone_terms: Term[]){
+            if(current.eq(old_term)){
+                // 検索対象の項と同じ場合
+
+                var t = new_term.clone(null);
+                clone_terms.push(t);
+                return t;
+            }
+
+            return current;
+        }
+
+        this.TraverseRep(root, fnc, old_term, new_term, clone_terms);
     }
 
     /*

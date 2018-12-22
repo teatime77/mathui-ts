@@ -179,12 +179,18 @@ function* generator(){
                 console.log("B:", line);
             }
 
+            var clone_terms: Term[] = [];
             if(stmt.isFncRefApp("rep")){
 
                 var app = stmt as Apply;
 
+                var eq_terms : Term[] = [];
+                SymbolicComputation.FindTerm(prev_term, app.args[0], eq_terms);
+
+                setColor("red", ... eq_terms.map(x => x.id));
+
                 var prev_term_copy = prev_term.clone();
-                SymbolicComputation.ReplaceTerm(prev_term_copy, app.args[0], app.args[1]);
+                SymbolicComputation.ReplaceTerm(prev_term_copy, app.args[0], app.args[1], clone_terms);
                 stmt = prev_term_copy;
             }
 
@@ -200,6 +206,7 @@ function* generator(){
 
             for(var it = scaleUp(div); ! it.next().done; yield);
             
+            setColor("red", ... clone_terms.map(x => x.id));
         }
     }
     popInterval();
@@ -243,14 +250,15 @@ function* generator(){
     var FG = parseTerm("F * G;");
     var t4 = t3.clone();
     t4.setDisplayText();
-    SymbolicComputation.ReplaceTerm(t4, uv, FG);
+    var clone_terms: Term[] = [];
+    SymbolicComputation.ReplaceTerm(t4, uv, FG, clone_terms);
     mmlDiv2(t4);
     hr();
 
     for(waitTypeset(); ! typeset_done; yield);
     console.log("");
 
-    var refs = sc.RefsByName(t4, "x");
+    var refs = SymbolicComputation.RefsByName(t4, "x");
     console.log(refs.map(x => element(x.id)));
     for(let e of refs.map(x => element(x.id))){
         e.style.color = "red";

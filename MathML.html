@@ -12,7 +12,7 @@
     </script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=default"></script>
-    <script type="text/javascript" src="./src/main.js?ver=230"></script>
+    <script type="text/javascript" src="./src/main.js?ver=233"></script>
 <script type="text/javascript">
 </script>    
 </head>
@@ -41,8 +41,10 @@
     
     #1.2-#3
 
-    rep( (f * g)(x + Delta) , f(x + Delta) * g(x + Delta) );
-    $ msg("代入終わり");
+    lim(Delta, 0, ((F * G)(x + Delta) - (F * G)(x)) / Delta);
+
+    rep( (F * G)(x + Delta) , F(x + Delta) * G(x + Delta) );
+    $ msg("置換終わり");
 
     lim(Delta, 0, (#2.1{f(x + Delta) * g(x + Delta)} - #2.2{f(x) * g(x)}) / Delta);
     $ setColor("red", "#2.1", "#2.2");
