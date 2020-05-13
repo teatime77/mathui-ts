@@ -215,6 +215,8 @@ function* generator(){
     var stmt_list = parser.parse(token_list);
 
     var sc = new SymbolicComputation();
+
+    // dif(f(x),x) = lim(Delta, 0, (f(x+Delta) - f(x)) / Delta );
     var t0 = stmt_list[0] as Term;
     var t1 = t0.clone();
     var uv = parseTerm("u+v;");
@@ -225,7 +227,7 @@ function* generator(){
     var t1_div = mmlDiv2(t1);
     hr();
     for(waitTypeset(); ! typeset_done; yield);
-    console.log("x -> u + v");
+    msg("x -> u + v");
 
     // f -> g
     var t2 = t0.clone();
