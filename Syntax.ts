@@ -1,5 +1,7 @@
 namespace MathUI {
 
+const oprTex = { "*":"\\cdot", "=":"=" , "!=":"\\neq" , "<":"\\lt", "<=":"\\leqq", ">":"\\gt" , ">=":"\\geqq" };
+
 function format(str: string, ...args){
     var ret = str;
 
@@ -13,6 +15,76 @@ function format(str: string, ...args){
     return ret;
 }
 
+function *fmt(str: string, args:Term[]){
+    const arg_strs = new Array<string>(args.length).fill('');
+
+    for(var i = 0; i < args.length; i++){
+        for(const seq of args[i].gen()){
+            arg_strs[i] = seq.join(' ');
+
+            yield [ format(str, arg_strs) ];
+        }       
+    }
+
+    yield [ format(str, arg_strs) ];
+}
+
+
+function *genBin(name : string, args:Term[]){
+    let seq1 : string[] = [];
+
+    for(var i = 0; i < args.length; i++){
+        let seq2 : string[];
+
+        for(const seq of args[i].gen()){
+            seq2 = seq;
+            yield seq1.concat(seq2);
+        }
+
+        seq1 = seq1.concat(seq2);
+
+        if(i != args.length - 1){
+
+            seq1.push(name);
+            yield seq1;
+        }
+    }
+
+    yield seq1;
+}
+
+
+function *genFnc(ref : Reference, args:Term[]){
+    let seq1 : string[];
+
+    for(const seq of ref.gen()){
+        seq1 = seq;
+        yield seq1;
+    }
+
+    seq1.push("(");
+
+    for(var i = 0; i < args.length; i++){
+        let str : string;
+
+        for(const seq of args[i].gen()){
+            str = seq.join(" ");
+            yield seq1.concat([str], [")"]);
+        }
+
+        seq1.push(str);
+
+        if(i != args.length - 1){
+
+            seq1.push(",");
+            yield seq1;
+        }
+    }
+
+    seq1.push(")");
+
+    yield seq1;
+}
 
 function toTexName(name : string){
     var v = [ 
@@ -129,6 +201,22 @@ export class Variable {
         return new HorizontalBlock(this, ctx, [ this.name, "∈", this.typeVar ]).layoutHorizontal();
     }
 
+    *gen(){
+        let seq1 : string[] = [ toTexName(this.name) ];
+        yield seq1;
+
+        seq1.push("\\in");
+        yield seq1;
+
+        let seq2 : string[] = [];
+        for(var s of this.typeVar.gen()){
+            seq2 = s;
+            yield seq1.concat(seq2);
+        }
+
+        yield seq1.concat(seq2);
+    }
+
     tex(){
         return toTexName(this.name) + " \\in " + this.typeVar.tex();
     }
@@ -165,6 +253,10 @@ export class Class {
 
     makeUI(ctx : ContextUI) : ElementUI {
         return ctx.makeText(this, this.name);
+    }
+
+    *gen(){
+        yield [ this.name ];
     }
 
     tex(){
@@ -325,6 +417,25 @@ export class Term extends Statement {
 
     texSub(){
         console.assert(false);
+        return "";
+    }
+
+    *genCoef() {        
+        if(this.value == -1){
+            yield ["-"];
+        }
+        else if(this.value != 1){
+            yield [ `${this.value}`, "\\cdot" ];
+        }
+        else{
+
+            yield [];
+        }
+    }
+
+    *gen(){
+        console.assert(false);
+        yield [];
     }
 
     tex(){
@@ -411,6 +522,10 @@ export class Constant extends Term {
         this.uiTerm = ui;
 
         return ui;
+    }
+
+    *gen() {
+        yield [ "" + this.value ];
     }
 
     tex(){
@@ -534,6 +649,36 @@ export class Reference extends Term {
         return ui_ref;
     }
 
+    *gen(){
+        let seq1 : string[] = [];
+
+        for(let seq of this.genCoef()){
+            seq1 = seq;
+            yield seq1;
+        }
+
+        const name = toTexName(this.name);
+        if (this.indexes == null){
+
+            seq1.push(name);
+            yield seq1;
+        }
+        else{
+            // $1, $2, ..., $n
+            let idx_format = [...Array(this.indexes.length)].map((_, i) => `$${i+1}`).join(", ");
+
+            let idx_str : string;
+            
+            for(let seq of fmt(idx_format, this.indexes)){
+                console.assert(seq.length == 1);
+                idx_str = seq[0];
+
+                yield seq1.concat([`${name}_{${idx_str}}`]);
+            }
+            yield seq1.concat([`${name}_{${idx_str}}`]);
+        }
+    }
+
     texSub(){
         var tex_name = toTexName(this.name);
 
@@ -594,6 +739,68 @@ export class Apply extends Term {
         }
 
         this.setDisplayText();
+    }
+
+    *gen(){
+        if(this.functionApp instanceof Reference){
+            switch(this.functionApp.name){
+            case "/":
+                yield* fmt("\\frac{$1}{$2}", this.args);
+                break;
+
+            case "lim":
+                yield* fmt("\\displaystyle \\lim_{ $1 \\to $2 } $3", this.args);
+                break;
+
+            case "^":
+                // var arg1 = this.args[0];
+                // var with_parenthesis = false;
+                // if(arg1 instanceof Apply){
+                //     if(arg1.functionApp instanceof Reference){
+
+                //         switch(arg1.functionApp.name){
+                //         case "*":
+                //         case "/":
+                //         case "+":
+                //         case "-":
+                //             with_parenthesis = true;
+                //             break;
+                //         }
+                //     }
+                //     else{
+
+                //         with_parenthesis = true;
+                //     }
+                // }
+
+                // if(with_parenthesis){
+
+                //     this.displayText = format("($1)^$2", texs);
+                // }
+                // else{
+                //     this.displayText = format("$1^$2", texs);
+                // }
+                // break;
+            case "+":
+            case "*":
+            case "=":
+            case "!=":
+            case "<":
+            case "<=":
+            case ">":
+            case ">=":
+                yield* genBin(oprTex[this.functionApp.name], this.args);
+                break;
+
+            default:
+                yield* genFnc(this.functionApp, this.args);
+                break;    
+            }
+        }
+        else{
+
+            yield [this.tex()];
+        }
     }
 
     setDisplayText() : string {
@@ -895,7 +1102,7 @@ export class Apply extends Term {
             case "<=":
             case ">":
             case ">=":
-                var opr = { "*":"\\cdot", "=":"=" , "!=":"\\neq" , "<":"\\lt", "<=":"\\leqq", ">":"\\gt" , ">=":"\\geqq" }[this.functionApp.name];
+                var opr = oprTex[this.functionApp.name];
                 return texs.join(" " + opr + " ");
             case "+":
                 var s = "";
@@ -1023,6 +1230,23 @@ export class VariableDeclaration extends Statement {
 
     makeUI(ctx : ContextUI){
         return new HorizontalBlock(this, ctx, joinMath(",", this.variables)).layoutHorizontal();
+    }
+
+    *gen(){
+        let seq1 : string[] = [];
+        
+        for(const v of this.variables){
+
+            let seq2 : string[] = [];
+            for(var s of v.gen()){
+                seq2 = s;
+                yield seq1.concat(seq2);
+            }
+
+            seq1 = seq1.concat(seq2)
+        }
+
+        yield seq1;
     }
 
     tex(){

@@ -21,6 +21,7 @@
         "SyntaxAnalysis.ts",
         "ui.ts",
         "util.ts",
-        "SymbolicComputation.ts"
+        "SymbolicComputation.ts",
+        "movie.ts"
     ]    
 }

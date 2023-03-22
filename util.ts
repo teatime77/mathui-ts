@@ -16,7 +16,7 @@ function parse(text: string)  {
     return currentParser.readStatement();
 }
 
-function parseTerm(text: string) : Term {
+export function parseTerm(text: string) : Term {
     currentParser.initParse(currentLex.lexicalAnalysis(text));
     return currentParser.readPredicate();
 }
@@ -69,11 +69,12 @@ function remove(idx){
     div.parentNode.removeChild(div);
 }
 
-function msg(txt){
-    var span = document.createElement("span");
-    span.innerText = txt;
-    document.body.appendChild(span);
-    document.body.appendChild(document.createElement("br"));
+export function msg(txt : string){
+    console.log(txt);
+    // var span = document.createElement("span");
+    // span.innerText = txt;
+    // document.body.appendChild(span);
+    // document.body.appendChild(document.createElement("br"));
 }
 
 function* scaleUp(div){
@@ -322,7 +323,7 @@ function mmlDiv2(term: Term) : HTMLDivElement {
     return div;
 }
 
-function element(id) : HTMLElement{
+export function element(id) : HTMLElement{
     return document.getElementById(id);
 }
 
@@ -409,4 +410,9 @@ function* moveTo2(src_id, dst){
     div.parentNode.removeChild(div);
     popInterval();
 }
+
+export function last(v:any[]){
+    return v[v.length - 1]
+}
+
 }
