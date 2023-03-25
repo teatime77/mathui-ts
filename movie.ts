@@ -71,14 +71,12 @@ namespace MathUI {
                 let div = document.createElement("div");
                 document.body.appendChild(div);
 
-                for(var seq of stmt.gen()){
-
-                    const str = seq.join(" ");
-                    msg(str);
-                    render(div, str);
-                    yield;
-                }
-            }    
+                var t = stmt.Tex();
+                var str = t.listTex().join(" ");
+                msg(str);
+                render(div, str);
+                yield;
+        }    
         }
     }
 

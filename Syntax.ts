@@ -2,6 +2,104 @@ namespace MathUI {
 
 const oprTex = { "*":"\\cdot", "=":"=" , "!=":"\\neq" , "<":"\\lt", "<=":"\\leqq", ">":"\\gt" , ">=":"\\geqq" };
 
+class TexNode {
+    id : string;
+
+    listTex() : string[]{
+        console.assert(false);
+        return [];
+    }
+}
+
+function joinTex(texs: TexNode[], str:string){
+    var v : TexNode[] = [];
+
+    for(const [i, n] of texs.entries()){
+        if(i != 0){
+            v.push(TL(str));
+        }
+
+        v.push(n);
+    }
+
+    return TB(v);
+}
+
+class TexBlock extends TexNode {
+    form: string;
+    children : TexNode[];
+
+    public constructor(form : string, children : TexNode[]){
+        super();
+
+        this.form = form;
+        this.children = children.slice();
+    }
+
+    listTex(){
+        var v = this.children.map(x => x.listTex());
+        if(this.form == ""){
+            return v.flat();
+        }
+        else{
+            var args = v.map(x => x.join(" "));
+            return [ format(this.form, args) ];
+        }
+    }
+
+    *gent2(){
+
+        if(this.form == ""){
+            for(var x of this.children){
+                yield* x.listTex();
+            }
+        }
+        else{
+
+            const arg_strs = new Array<string>(this.children.length).fill('');
+
+            for(var i = 0; i < this.children.length; i++){
+                for(const str of this.children[i].listTex()){
+                    arg_strs[i] = str;
+        
+                    yield format(this.form, arg_strs);
+                }       
+            }
+        
+            yield format(this.form, arg_strs);
+        
+
+        }
+        yield "";
+    }
+
+}
+
+class TexLeaf extends TexNode {
+    text : string;
+    public constructor(text : string){
+        super();
+
+        this.text = text;
+    }
+
+    listTex(){
+        return [ this.text ];
+    }
+}
+
+function TBF(form : string,  children : TexNode[]){
+    return new TexBlock(form, children);
+}
+
+function TB(children : TexNode[]){
+    return new TexBlock("", children);
+}
+
+function TL(text: string){
+    return new TexLeaf(text);
+}
+
 function format(str: string, ...args){
     var ret = str;
 
@@ -217,6 +315,10 @@ export class Variable {
         yield seq1.concat(seq2);
     }
 
+    Tex() : TexNode {
+        return TB([TL(toTexName(this.name)), TL(" \\in "), this.typeVar.Tex() ]);
+    }
+
     tex(){
         return toTexName(this.name) + " \\in " + this.typeVar.tex();
     }
@@ -257,6 +359,10 @@ export class Class {
 
     *gen(){
         yield [ this.name ];
+    }
+
+    Tex() : TexNode{
+        return TL(this.name);
     }
 
     tex(){
@@ -415,6 +521,11 @@ export class Term extends Statement {
     setParenthesis(){
     }
 
+    TexSub() : TexNode{
+        console.assert(false);
+        return TL("");
+    }
+
     texSub(){
         console.assert(false);
         return "";
@@ -436,6 +547,20 @@ export class Term extends Statement {
     *gen(){
         console.assert(false);
         yield [];
+    }
+
+    Tex() : TexNode{
+        var s = this.TexSub();
+
+        if(this.value == 1){
+            return s;
+        }
+        else if(this.value == -1){
+            return TB([TL("- "), s]);
+        }
+        else{
+            return TBF("$1 \\cdot $2", [TL(`${this.value}`) , s]);
+        }
     }
 
     tex(){
@@ -526,6 +651,10 @@ export class Constant extends Term {
 
     *gen() {
         yield [ "" + this.value ];
+    }
+
+    Tex(): TexNode {
+        return TL(`${this.value}`);
     }
 
     tex(){
@@ -677,6 +806,17 @@ export class Reference extends Term {
             }
             yield seq1.concat([`${name}_{${idx_str}}`]);
         }
+    }
+
+    TexSub() : TexNode {
+        var tex_name = TL(toTexName(this.name));
+
+        if (this.indexes != null){
+            var texs = TB(this.indexes.map(x => x.Tex()));
+
+            return TBF("$1_{$2}", [tex_name, texs]);
+        }
+        return tex_name;
     }
 
     texSub(){
@@ -1064,6 +1204,69 @@ export class Apply extends Term {
         }
     }
 
+
+    TexSub2() : TexNode{
+        var texs = this.args.map(x => x.Tex());
+
+        if(this.functionApp instanceof Reference){
+
+            switch(this.functionApp.name){
+            case "sum":
+                return TBF("\\sum_{$1=$2}^{$3} $4", texs);
+
+            case "lim":
+                return TBF("\\displaystyle \\lim_{ $1 \\to $2 } $3", texs);
+    
+            case "^":
+                var arg1 = this.args[0];
+                if(arg1 instanceof Apply){
+                    if(arg1.functionApp instanceof Reference){
+
+                        switch(arg1.functionApp.name){
+                        case "*":
+                        case "/":
+                        case "+":
+                        case "-":
+                            return TBF("($1)^{$2}", texs);                                
+                        }
+                    }
+                    else{
+
+                        return TBF("($1)^{$2}", texs);                                
+                    }
+                }
+                return TBF("$1^{$2}", texs);
+            case "sqrt":
+                return TBF("\\sqrt{$1}", texs);
+            case "norm":
+                return TBF("\\| $1 \\|", texs);
+            case "*":
+            case "=":
+            case "!=":
+            case "<":
+            case "<=":
+            case ">":
+            case ">=":
+                var opr = oprTex[this.functionApp.name];
+                return joinTex(texs, opr);
+            case "+":
+                var v = [];
+                for(let [idx, arg] of this.args.entries()){
+                    if(0 < idx && 0 <= arg.value){
+                        v.push(TL("+"));
+                    }
+                    v.push(texs[idx]);
+                }
+                return TB(v);
+            case "/":
+                return TBF("\\frac{$1}{$2}", texs);
+            default:
+                return TBF("$1($2)", [this.functionApp.Tex(), joinTex(texs, ",")]);
+            }
+        }
+        return TBF("($1)($2)", [this.functionApp.Tex(), joinTex(texs, ",")]);
+    }
+
     texSub2(){
         var texs = this.args.map(x => x.tex());
 
@@ -1120,6 +1323,17 @@ export class Apply extends Term {
             }
         }
         return format("($1)($2)", this.functionApp.tex(), texs.join(","));
+    }
+
+    TexSub() : TexNode{
+        var s = this.TexSub2();
+
+        if(this.withParenthesis){
+            return TB([TL("("), s, TL(")")]);
+        }
+        else{
+            return s;
+        }
     }
 
     texSub(){
@@ -1247,6 +1461,10 @@ export class VariableDeclaration extends Statement {
         }
 
         yield seq1;
+    }
+
+    Tex() : TexNode{
+        return TB(this.variables.map(x => x.Tex()));
     }
 
     tex(){

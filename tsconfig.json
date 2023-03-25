@@ -10,7 +10,7 @@
 //            "es5",
             "scripthost",
 //            "es2015.promise"
-            "es2017"
+            "ES2019"
     ]
     }
     ,
