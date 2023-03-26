@@ -3,15 +3,35 @@ namespace MathUI {
 const oprTex = { "*":"\\cdot", "=":"=" , "!=":"\\neq" , "<":"\\lt", "<=":"\\leqq", ">":"\\gt" , ">=":"\\geqq" };
 
 class TexNode {
-    id : string;
+    metaId : string = undefined;
 
+    public constructor(obj:any){
+        if(obj != null && obj instanceof Term){
+            this.metaId = obj.metaId;
+            console.log(`meta id: ${this.metaId}`)
+        }
+    }
     listTex() : string[]{
         console.assert(false);
         return [];
     }
+
+    *genTex() {
+        console.assert(false);
+        yield [];
+    }
+
+    findByMetaId(meta_id: string) : TexNode{
+        return null;
+    }
 }
 
-function joinTex(texs: TexNode[], str:string){
+
+export var targetNode = null;
+export var genNode = null;
+var genValue;
+
+function joinTex(texs: TexNode[], str:string, app:Apply = null){
     var v : TexNode[] = [];
 
     for(const [i, n] of texs.entries()){
@@ -22,21 +42,28 @@ function joinTex(texs: TexNode[], str:string){
         v.push(n);
     }
 
-    return TB(v);
+    return TB(v, app);
 }
 
 class TexBlock extends TexNode {
     form: string;
     children : TexNode[];
 
-    public constructor(form : string, children : TexNode[]){
-        super();
+    public constructor(form : string, children : TexNode[], obj:any){
+        super(obj);
 
         this.form = form;
         this.children = children.slice();
     }
 
-    listTex(){
+    listTex() : string[] {
+        if(this == targetNode){
+            var x = genNode.next();
+            if(! x.done){
+                genValue = x.value;
+            }
+            return ["\\textcolor{red}{"].concat(genValue, ["}"]);
+        }
         var v = this.children.map(x => x.listTex());
         if(this.form == ""){
             return v.flat();
@@ -47,57 +74,83 @@ class TexBlock extends TexNode {
         }
     }
 
-    *gent2(){
-
+    *genTex(){
         if(this.form == ""){
-            for(var x of this.children){
-                yield* x.listTex();
+            const arg_strs = new Array<Array<string>>(this.children.length).fill([]);
+
+            for(var i = 0; i < this.children.length; i++){
+                for(const seq of this.children[i].genTex()){
+                    arg_strs[i] = seq;
+        
+                    yield arg_strs.flat();
+                }       
             }
+        
+            yield arg_strs.flat();
         }
         else{
 
             const arg_strs = new Array<string>(this.children.length).fill('');
 
             for(var i = 0; i < this.children.length; i++){
-                for(const str of this.children[i].listTex()){
-                    arg_strs[i] = str;
+                for(const seq of this.children[i].genTex()){
+                    arg_strs[i] = seq.join(" ");
         
-                    yield format(this.form, arg_strs);
+                    yield [ format(this.form, arg_strs) ];
                 }       
             }
         
-            yield format(this.form, arg_strs);
-        
-
+            yield [ format(this.form, arg_strs) ];
         }
-        yield "";
     }
 
+    findByMetaId(meta_id: string) : TexNode{
+        if(this.metaId == meta_id){
+            return this;
+        }
+
+        for(const nd of this.children){
+            const nd2 = nd.findByMetaId(meta_id);
+            if(nd2 != null){
+                return nd2;
+            }
+        }
+
+        return null;        
+    }
 }
 
 class TexLeaf extends TexNode {
     text : string;
-    public constructor(text : string){
-        super();
+    public constructor(text : string, obj:any){
+        super(obj);
 
         this.text = text;
     }
 
-    listTex(){
+    listTex() : string[] {
         return [ this.text ];
+    }
+
+    *genTex(){
+        yield [ this.text ];
+    }
+
+    findByMetaId(meta_id: string) : TexNode{
+        return this.metaId == meta_id ? this : null;        
     }
 }
 
-function TBF(form : string,  children : TexNode[]){
-    return new TexBlock(form, children);
+function TBF(form : string,  children : TexNode[], obj:any = null){
+    return new TexBlock(form, children, obj);
 }
 
-function TB(children : TexNode[]){
-    return new TexBlock("", children);
+function TB(children : TexNode[], obj:any = null){
+    return new TexBlock("", children, obj);
 }
 
-function TL(text: string){
-    return new TexLeaf(text);
+function TL(text: string, obj:any = null){
+    return new TexLeaf(text, obj);
 }
 
 function format(str: string, ...args){
@@ -316,7 +369,7 @@ export class Variable {
     }
 
     Tex() : TexNode {
-        return TB([TL(toTexName(this.name)), TL(" \\in "), this.typeVar.Tex() ]);
+        return TB([TL(null, toTexName(this.name)), TL(null, " \\in "), this.typeVar.Tex() ], this);
     }
 
     tex(){
@@ -362,7 +415,7 @@ export class Class {
     }
 
     Tex() : TexNode{
-        return TL(this.name);
+        return TL(this.name, this);
     }
 
     tex(){
@@ -654,7 +707,7 @@ export class Constant extends Term {
     }
 
     Tex(): TexNode {
-        return TL(`${this.value}`);
+        return TL(`${this.value}`, this);
     }
 
     tex(){
@@ -809,14 +862,12 @@ export class Reference extends Term {
     }
 
     TexSub() : TexNode {
-        var tex_name = TL(toTexName(this.name));
-
         if (this.indexes != null){
             var texs = TB(this.indexes.map(x => x.Tex()));
 
-            return TBF("$1_{$2}", [tex_name, texs]);
+            return TBF("$1_{$2}", [TL(toTexName(this.name)), texs], this);
         }
-        return tex_name;
+        return TL(toTexName(this.name), this);
     }
 
     texSub(){
@@ -1212,10 +1263,10 @@ export class Apply extends Term {
 
             switch(this.functionApp.name){
             case "sum":
-                return TBF("\\sum_{$1=$2}^{$3} $4", texs);
+                return TBF("\\sum_{$1=$2}^{$3} $4", texs, this);
 
             case "lim":
-                return TBF("\\displaystyle \\lim_{ $1 \\to $2 } $3", texs);
+                return TBF("\\displaystyle \\lim_{ $1 \\to $2 } $3", texs, this);
     
             case "^":
                 var arg1 = this.args[0];
@@ -1227,19 +1278,19 @@ export class Apply extends Term {
                         case "/":
                         case "+":
                         case "-":
-                            return TBF("($1)^{$2}", texs);                                
+                            return TBF("($1)^{$2}", texs, this);                                
                         }
                     }
                     else{
 
-                        return TBF("($1)^{$2}", texs);                                
+                        return TBF("($1)^{$2}", texs, this);                                
                     }
                 }
-                return TBF("$1^{$2}", texs);
+                return TBF("$1^{$2}", texs, this);
             case "sqrt":
-                return TBF("\\sqrt{$1}", texs);
+                return TBF("\\sqrt{$1}", texs, this);
             case "norm":
-                return TBF("\\| $1 \\|", texs);
+                return TBF("\\| $1 \\|", texs, this);
             case "*":
             case "=":
             case "!=":
@@ -1248,7 +1299,7 @@ export class Apply extends Term {
             case ">":
             case ">=":
                 var opr = oprTex[this.functionApp.name];
-                return joinTex(texs, opr);
+                return joinTex(texs, opr, this);
             case "+":
                 var v = [];
                 for(let [idx, arg] of this.args.entries()){
@@ -1257,14 +1308,14 @@ export class Apply extends Term {
                     }
                     v.push(texs[idx]);
                 }
-                return TB(v);
+                return TB(v, this);
             case "/":
-                return TBF("\\frac{$1}{$2}", texs);
+                return TBF("\\frac{$1}{$2}", texs, this);
             default:
-                return TBF("$1($2)", [this.functionApp.Tex(), joinTex(texs, ",")]);
+                return TBF("$1($2)", [this.functionApp.Tex(), joinTex(texs, ",")], this);
             }
         }
-        return TBF("($1)($2)", [this.functionApp.Tex(), joinTex(texs, ",")]);
+        return TBF("($1)($2)", [this.functionApp.Tex(), joinTex(texs, ",")], this);
     }
 
     texSub2(){
@@ -1464,7 +1515,7 @@ export class VariableDeclaration extends Statement {
     }
 
     Tex() : TexNode{
-        return TB(this.variables.map(x => x.Tex()));
+        return TB(this.variables.map(x => x.Tex()), this);
     }
 
     tex(){

@@ -68,15 +68,43 @@ namespace MathUI {
 
                 console.log(`[${line}] [${stmt.tex()}]`)
 
-                let div = document.createElement("div");
-                document.body.appendChild(div);
+                let div1 = document.createElement("div");
+                document.body.appendChild(div1);
 
                 var t = stmt.Tex();
                 var str = t.listTex().join(" ");
                 msg(str);
-                render(div, str);
+                render(div1, str);
                 yield;
-        }    
+
+
+                let div2 = document.createElement("div");
+                document.body.appendChild(div2);
+
+                for(const seq of t.genTex()){
+                    var str = seq.join(" ");
+                    msg(str);
+                    render(div2, str);    
+                    yield;
+                }                
+
+                targetNode = t.findByMetaId("#1.1");
+                if(targetNode != null){
+
+                    let div3 = document.createElement("div");
+                    document.body.appendChild(div3);
+
+                    genNode = targetNode.genTex();
+                    while(! genNode.done){
+                        var str = t.listTex().join(" ");
+                        msg(str);
+                        render(div3, str);
+                        yield;
+                    }                
+                }
+
+                document.body.appendChild(document.createElement("hr"));
+            }    
         }
     }
 
