@@ -29,6 +29,7 @@ class TexNode {
 
 export var targetNode = null;
 export var genNode = null;
+export var genNext;
 var genValue;
 
 function joinTex(texs: TexNode[], str:string, app:Apply = null){
@@ -58,9 +59,9 @@ class TexBlock extends TexNode {
 
     listTex() : string[] {
         if(this == targetNode){
-            var x = genNode.next();
-            if(! x.done){
-                genValue = x.value;
+            genNext = genNode.next();
+            if(! genNext.done){
+                genValue = genNext.value;
             }
             return ["\\textcolor{red}{"].concat(genValue, ["}"]);
         }
@@ -487,7 +488,7 @@ export class Statement {
 
 export class Term extends Statement {
     // 親
-    parent : object;
+    parent : Term | Variable;
 
     // 係数
     value : number = 1;
@@ -1267,7 +1268,10 @@ export class Apply extends Term {
 
             case "lim":
                 return TBF("\\displaystyle \\lim_{ $1 \\to $2 } $3", texs, this);
-    
+
+            case "dif":
+                return TBF("\\frac{d $1}{d $2}", texs, this);
+        
             case "^":
                 var arg1 = this.args[0];
                 if(arg1 instanceof Apply){
@@ -1310,7 +1314,8 @@ export class Apply extends Term {
                 }
                 return TB(v, this);
             case "/":
-                return TBF("\\frac{$1}{$2}", texs, this);
+            case "div":
+                    return TBF("\\frac{$1}{$2}", texs, this);
             default:
                 return TBF("$1($2)", [this.functionApp.Tex(), joinTex(texs, ",")], this);
             }

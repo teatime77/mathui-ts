@@ -24,14 +24,26 @@ $$
 
 <div id="d1"></div>
 
-
-<textarea style="display:block" cols="180" rows="20" id="mul-dif">
-  lim(Delta, 0, (#1.1{(f * g)(x + Delta)} - #1.2{(f * g)(x)}) / Delta);
+<!-- 
 </textarea>
 
-<textarea style="display: none" cols="1" rows="1" id="mul-dif2">
-  (5 - 4) / (3 + 2/1);
+<textarea style="display: none">
+
+  rep(#0.0, (f * g));
+ -->
+
+<textarea style="display:block" cols="180" rows="20" id="mul-dif">
+  dif(#0.0{f}(x), x) = lim(Delta, 0, div(#0.1{f}(x + Delta) - #0.2{f}(x), Delta));
+
   dif((f * g)(x), x);
+
+  lim(Delta, 0, ((F * G)(x + Delta) - (F * G)(x)) / Delta);
+
+  rep( (F * G)(x + Delta) , F(x + Delta) * G(x + Delta) );
+
+
+  lim(Delta, 0, (#1.1{(f * g)(x + Delta)} - #1.2{(f * g)(x)}) / Delta);
+  (5 - 4) / (3 + 2/1);
 
   $ msg("関数の積の定義");
   $ setColor("red", "#1.1", "#1.2");

@@ -49,7 +49,10 @@ namespace MathUI {
     function* generator(){
         var lex = new Lex();
         var parser = new Parser();
-    
+        metaTerms = [];
+        var terms : Term[] = [];
+        var prev_term : Term = undefined;
+
         for(var line of (element("mul-dif") as HTMLTextAreaElement).value.split('\n')){
 
             line = line.trim();
@@ -65,6 +68,24 @@ namespace MathUI {
             else{
                 var stmt = parseTerm(line);
                 stmt.setDisplayText();
+
+                terms.push(stmt);
+
+                var clone_terms: Term[] = [];
+                if(stmt.isFncRefApp("rep")){
+
+                    var app = stmt as Apply;
+
+                    var eq_terms : Term[] = [];
+                    SymbolicComputation.FindTerm(prev_term, app.args[0], eq_terms);
+    
+    
+                    var prev_term_copy = prev_term.clone();
+                    SymbolicComputation.ReplaceTerm(prev_term_copy, app.args[0], app.args[1], clone_terms);
+                    stmt = prev_term_copy;
+                }
+
+                prev_term = stmt;
 
                 console.log(`[${line}] [${stmt.tex()}]`)
 
@@ -95,10 +116,14 @@ namespace MathUI {
                     document.body.appendChild(div3);
 
                     genNode = targetNode.genTex();
-                    while(! genNode.done){
+                    while(true){
                         var str = t.listTex().join(" ");
                         msg(str);
                         render(div3, str);
+
+                        if(genNext.done){
+                            break;
+                        }
                         yield;
                     }                
                 }

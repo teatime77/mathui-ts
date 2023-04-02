@@ -1,5 +1,7 @@
 namespace MathUI {
 
+export var metaTerms : Term[] = [];
+
 class SyntaxException extends Error {
 
 }
@@ -23,6 +25,10 @@ export class Parser {
 
     getCurrentToken() : Token {
         return this.currentToken;
+    }
+
+    currentTokenText() : string {
+        return this.currentToken.text;
     }
 
     readNextToken(): Token{
@@ -259,15 +265,38 @@ export class Parser {
             // $n{・}の場合
 
             var meta_id : Token = this.getTokenT(TokenType.metaId);
-            this.getToken("{");
+            if(this.currentToken.text == "{"){
 
-            // 式を読みます。
-            var term : Term = this.readExpression();
-            term.metaId = meta_id.text;
+                this.getToken("{");
 
-            this.getToken("}");
+                // 式を読みます。
+                var term : Term = this.readExpression();
+                term.metaId = meta_id.text;
+                metaTerms.push(term);
 
-            return term;
+                this.getToken("}");
+
+                if(term instanceof Reference && this.currentTokenText() == "(") {
+        
+                    // 実引数を読みます。
+                    var args : Term[] = this.readArgs();
+        
+                    // 関数適用を返します。
+                    return new Apply(term, args);
+                }
+                else{
+
+                    return term;
+                }
+    
+            }
+            else{
+                const ref = new Reference(meta_id.text, null, null);
+                ref.metaId = meta_id.text;
+                metaTerms.push(ref);
+                
+                return ref;
+            }
         }
         else {
             throw new SyntaxException();

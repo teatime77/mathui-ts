@@ -213,62 +213,62 @@ export class SymbolicComputation {
         return null;
     }
 
-    static Traverse(obj, fnc, ...args){
-        if(obj == null){
+    static Traverse(parent: Term, term:Term, fnc, ...args){
+        if(term == null){
             return;
         }
-        if(obj instanceof Reference){
-            if(obj.indexes != null){
+        if(term instanceof Reference){
+            if(term.indexes != null){
 
-                obj.indexes.forEach((idx, index) => {
+                term.indexes.forEach((idx, index) => {
 
-                    this.Traverse(idx, fnc, ...args);
+                    this.Traverse(term, idx, fnc, ...args);
                 });
             }
         }
-        else if(obj instanceof Apply){
-            this.Traverse(obj.functionApp, fnc, ...args);
+        else if(term instanceof Apply){
+            this.Traverse(term, term.functionApp, fnc, ...args);
 
-            obj.args.forEach((arg, index) => {
+            term.args.forEach((arg, index) => {
 
-                this.Traverse(arg, fnc, ...args);
+                this.Traverse(term, arg, fnc, ...args);
             });
         }
 
-        fnc(obj, ...args);
+        fnc(parent, term, ...args);
     }
 
-    static TraverseRep(obj, fnc, ...args){
-        if(obj == null){
+    static TraverseRep(parent:Term, term:Term, fnc, ...args){
+        if(term == null){
             return null;
         }
 
-        if(obj instanceof Reference){
-            if(obj.indexes != null){
+        if(term instanceof Reference){
+            if(term.indexes != null){
 
-                obj.indexes.forEach((idx, index) => {
+                term.indexes.forEach((idx, index) => {
 
-                    obj.indexes[index] = this.TraverseRep(idx, fnc, ...args);
+                    term.indexes[index] = this.TraverseRep(term, idx, fnc, ...args);
                 });
             }
         }    
-        else if(obj instanceof Apply){
-            obj.functionApp = this.TraverseRep(obj.functionApp, fnc, ...args);
+        else if(term instanceof Apply){
+            term.functionApp = this.TraverseRep(term, term.functionApp, fnc, ...args);
 
-            obj.args.forEach((arg, index) => {
+            term.args.forEach((arg, index) => {
 
-                obj.args[index] = this.TraverseRep(arg, fnc, ...args);
+                term.args[index] = this.TraverseRep(term, arg, fnc, ...args);
             });
         }
 
-        return fnc(obj, ...args);
+        return fnc(parent, term, ...args);
     }
 
     /*
         変数に項を代入します。
     */
     static Subst(root: Term, subst_tbl : Map<Reference, Term>, var_tbl: Map<Variable, Variable> = null) {
-        var fnc = function(t: Term, subst_tbl: Map<Reference, Term>, var_tbl: Map<Variable, Variable>){
+        var fnc = function(parent: Term, t: Term, subst_tbl: Map<Reference, Term>, var_tbl: Map<Variable, Variable>){
             if(t instanceof Reference){
                 // 変数参照の場合
 
@@ -282,14 +282,14 @@ export class SymbolicComputation {
             return undefined;
         }
 
-        this.TraverseRep(root, fnc, subst_tbl, var_tbl);
+        this.TraverseRep(null, root, fnc, subst_tbl, var_tbl);
     }
 
     /*
         指定した名前の変数参照に項を代入します。
     */
     static SubstByName(root: Term, name: string, new_term: Term ) {
-        var fnc = function(current: Term, name: string, new_term: Term){
+        var fnc = function(parent: Term, current: Term, name: string, new_term: Term){
             if(current instanceof Reference && current.name == name){
                 // 指定した名前の変数参照の場合
 
@@ -299,7 +299,7 @@ export class SymbolicComputation {
             return current;
         }
 
-        this.TraverseRep(root, fnc, name, new_term);
+        this.TraverseRep(null, root, fnc, name, new_term);
     }
 
     /*
@@ -316,7 +316,7 @@ export class SymbolicComputation {
 
         var refs: Reference[] = [];
 
-        this.Traverse(root, fnc, name, refs);
+        this.Traverse(null, root, fnc, name, refs);
 
         return refs;
     }
@@ -325,7 +325,7 @@ export class SymbolicComputation {
         指定した項と同じ項を探します。
     */
     static FindTerm(root: Term, target: Term, eq_terms: Term[] ) {
-        var fnc = function(current: Term, target: Term, eq_terms: Term[]){
+        var fnc = function(parent: Term, current: Term, target: Term, eq_terms: Term[]){
             if(current.eq(target)){
                 // 検索対象の項と同じ場合
 
@@ -335,14 +335,14 @@ export class SymbolicComputation {
             return current;
         }
 
-        this.Traverse(root, fnc, target, eq_terms);
+        this.Traverse(null, root, fnc, target, eq_terms);
     }
 
     /*
         検索対象の項を指定した項に置換します。
     */
     static ReplaceTerm(root: Term, old_term: Term, new_term: Term, clone_terms: Term[] ) {
-        var fnc = function(current: Term, old_term: Term, new_term: Term, clone_terms: Term[]){
+        var fnc = function(parent: Term, current: Term, old_term: Term, new_term: Term, clone_terms: Term[]){
             if(current.eq(old_term)){
                 // 検索対象の項と同じ場合
 
@@ -354,7 +354,7 @@ export class SymbolicComputation {
             return current;
         }
 
-        this.TraverseRep(root, fnc, old_term, new_term, clone_terms);
+        this.TraverseRep(null, root, fnc, old_term, new_term, clone_terms);
     }
 
     /*
