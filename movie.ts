@@ -1,6 +1,7 @@
 var katex : any;
 
 namespace MathUI {
+    var interval : number;
     var iterator;
     var timerId : number;
 
@@ -66,6 +67,8 @@ namespace MathUI {
             else if(line[0] == '#'){
             }           
             else{
+                targetNode = null;
+
                 var stmt = parseTerm(line);
                 stmt.setDisplayText();
 
@@ -109,23 +112,49 @@ namespace MathUI {
                     yield;
                 }                
 
-                targetNode = t.findByMetaId("#1.1");
-                if(targetNode != null){
+                let tex_nodes :TexNode[] = [];
+                if(clone_terms.length == 0){
+
+                    const nd = t.findByMetaId("#1.1");
+                    if(nd != null){
+                        tex_nodes.push(nd);
+                    }
+                }
+                else{
+                    for(let term of clone_terms){
+                        const nd = t.findByTerm(term);
+                        if(nd != null){
+                            tex_nodes.push(nd);
+                        }
+                    }
+                }
+
+                if(tex_nodes.length != 0){
+                    clearInterval(timerId);
+                    timerId = setInterval(timerFnc, 500);
 
                     let div3 = document.createElement("div");
                     document.body.appendChild(div3);
 
-                    genNode = targetNode.genTex();
-                    while(true){
-                        var str = t.listTex().join(" ");
-                        msg(str);
-                        render(div3, str);
+                    for(let nd of tex_nodes){
+                        targetNode = nd;
 
-                        if(genNext.done){
-                            break;
-                        }
-                        yield;
-                    }                
+
+                        genNode = targetNode.genTex();
+                        while(true){
+                            var str = t.listTex().join(" ");
+                            msg(str);
+                            render(div3, str);
+
+                            if(genNext.done){
+                                break;
+                            }
+                            yield;
+                        }                
+                    }
+
+                    clearInterval(timerId);
+                    timerId = setInterval(timerFnc, interval);
                 }
 
                 document.body.appendChild(document.createElement("hr"));
@@ -151,8 +180,46 @@ namespace MathUI {
             console.log("ジェネレータ 終了");
         }
     }
+
+    function fetchText(){
+        const path = "README.md";
+        let url: string;
+
+        if(path.startsWith("http")){
+    
+            url = path;
+        }
+        else{
+    
+            let k = window.location.href.lastIndexOf("/");
+    
+            url = `${window.location.href.substring(0, k)}/${path}`;
+        }
+        const url2 = encodeURI(url);
+        msg(`url:${url2}`)
+    
+        fetch(url2, { cache : "no-store" })
+        .then((res: Response) => {
+            if(res.status == 404){
+    
+                throw new Error("ファイルがありません。");
+            }
+            else{
+    
+                return res.text();
+            }
+        })
+        .then(text => {
+            msg(`text:${text}`);
+        })
+        .catch(error => {
+            msg(`fetch error ${error}`);
+        });
+    
+    }
     
     export function bodyOnLoad(){
+        fetchText();
         initSpeech();
         let ele = document.getElementById("d1");
     
@@ -170,7 +237,7 @@ namespace MathUI {
 
         iterator = generator();
 
-        const interval = parseInt((element("interval") as HTMLInputElement).value);
+        interval = parseInt((element("interval") as HTMLInputElement).value);
         timerId = setInterval(timerFnc, interval);
     }
 

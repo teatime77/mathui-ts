@@ -2,11 +2,13 @@ namespace MathUI {
 
 const oprTex = { "*":"\\cdot", "=":"=" , "!=":"\\neq" , "<":"\\lt", "<=":"\\leqq", ">":"\\gt" , ">=":"\\geqq" };
 
-class TexNode {
+export class TexNode {
+    termTex: Term;
     metaId : string = undefined;
 
     public constructor(obj:any){
         if(obj != null && obj instanceof Term){
+            this.termTex = obj;
             this.metaId = obj.metaId;
             console.log(`meta id: ${this.metaId}`)
         }
@@ -21,13 +23,17 @@ class TexNode {
         yield [];
     }
 
+    findByTerm(term: Term) : TexNode{
+        return null;
+    }
+
     findByMetaId(meta_id: string) : TexNode{
         return null;
     }
 }
 
 
-export var targetNode = null;
+export var targetNode : TexNode = null;
 export var genNode = null;
 export var genNext;
 var genValue;
@@ -105,6 +111,21 @@ class TexBlock extends TexNode {
         }
     }
 
+    findByTerm(term: Term) : TexNode{
+        if(this.termTex == term){
+            return this;
+        }
+
+        for(const nd of this.children){
+            const nd2 = nd.findByTerm(term);
+            if(nd2 != null){
+                return nd2;
+            }
+        }
+
+        return null;        
+    }
+
     findByMetaId(meta_id: string) : TexNode{
         if(this.metaId == meta_id){
             return this;
@@ -135,6 +156,10 @@ class TexLeaf extends TexNode {
 
     *genTex(){
         yield [ this.text ];
+    }
+
+    findByTerm(term: Term) : TexNode{
+        return this.termTex == term ? this : null;        
     }
 
     findByMetaId(meta_id: string) : TexNode{

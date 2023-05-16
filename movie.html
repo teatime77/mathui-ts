@@ -33,7 +33,9 @@ $$
  -->
 
 <textarea style="display:block" cols="180" rows="20" id="mul-dif">
-  dif(#0.0{f}(x), x) = lim(Delta, 0, div(#0.1{f}(x + Delta) - #0.2{f}(x), Delta));
+  dif(f(x), x) = lim(Delta, 0, div(f(x + Delta) - f(x), Delta));
+
+  rep(f, ff * gg);
 
   dif((f * g)(x), x);
 
